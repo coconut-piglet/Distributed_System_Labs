@@ -4,12 +4,10 @@
  * NOTE: Do not touch this file!
  */
 
-
 #ifndef _RDT_SENDER_H_
 #define _RDT_SENDER_H_
 
 #include "rdt_struct.h"
-
 
 /*[]------------------------------------------------------------------------[]
   |  routines that you can call
@@ -33,7 +31,6 @@ bool Sender_isTimerSet();
 
 /* pass a packet to the lower layer at the sender */
 void Sender_ToLowerLayer(struct packet *pkt);
-
 
 /*[]------------------------------------------------------------------------[]
   |  routines to be changed/enhanced by you
@@ -60,5 +57,4 @@ void Sender_FromLowerLayer(struct packet *pkt);
 /* event handler, called when the timer expires */
 void Sender_Timeout();
 
-
-#endif  /* _RDT_SENDER_H_ */
+#endif /* _RDT_SENDER_H_ */

@@ -4,12 +4,10 @@
  * NOTE: Do not touch this file!
  */
 
-
 #ifndef _RDT_RECEIVER_H_
 #define _RDT_RECEIVER_H_
 
 #include "rdt_struct.h"
-
 
 /*[]------------------------------------------------------------------------[]
   |  routines that you can call
@@ -23,7 +21,6 @@ void Receiver_ToLowerLayer(struct packet *pkt);
 
 /* deliver a message to the upper layer at the receiver */
 void Receiver_ToUpperLayer(struct message *msg);
-
 
 /*[]------------------------------------------------------------------------[]
   |  routines to be changed/enhanced by you
@@ -43,4 +40,4 @@ void Receiver_Final();
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt);
 
-#endif  /* _RDT_RECEIVER_H_ */
+#endif /* _RDT_RECEIVER_H_ */

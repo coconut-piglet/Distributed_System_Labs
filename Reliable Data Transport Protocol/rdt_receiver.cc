@@ -6,13 +6,12 @@
  *       situations.  In this implementation, the packet format is laid out as 
  *       the following:
  *       
- *       |<-  1 byte  ->|<-             the rest            ->|
- *       | payload size |<-             payload             ->|
+ *       |<-  2 byte  ->|<-  1 byte  ->|<-             the rest            ->|
+ *       |<- checksum ->| payload size |<-             payload             ->|
  *
  *       The first byte of each packet indicates the size of the payload
  *       (excluding this single-byte header)
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +19,6 @@
 
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
-
 
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
@@ -37,29 +35,49 @@ void Receiver_Final()
     fprintf(stdout, "At %.2fs: receiver finalizing ...\n", GetSimulationTime());
 }
 
+/* receiver checksum */
+unsigned short Receiver_Checksum(struct packet *pkt)
+{
+    unsigned short checksum = 0;
+    unsigned int tmp = 0;
+    /* since the RDT_PKTSIZE is a even number, this will cover the whole pkt */
+    for (int i = 2; i < RDT_PKTSIZE; i += 2)
+    {
+        tmp += *(unsigned short *)(&(pkt->data[i]));
+    }
+    tmp = (tmp >> 16) + (tmp & 0xffff);
+    tmp += (tmp >> 16);
+    checksum = ~tmp;
+    return checksum;
+}
+
 /* event handler, called when a packet is passed from the lower layer at the 
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
-    /* 1-byte header indicating the size of the payload */
-    int header_size = 1;
+    /* 3-byte header indicating the checksum of the packet and the size of the payload */
+    int header_size = 3;
 
     /* construct a message and deliver to the upper layer */
-    struct message *msg = (struct message*) malloc(sizeof(struct message));
-    ASSERT(msg!=NULL);
+    struct message *msg = (struct message *)malloc(sizeof(struct message));
+    ASSERT(msg != NULL);
 
-    msg->size = pkt->data[0];
+    msg->size = pkt->data[2];
 
     /* sanity check in case the packet is corrupted */
-    if (msg->size<0) msg->size=0;
-    if (msg->size>RDT_PKTSIZE-header_size) msg->size=RDT_PKTSIZE-header_size;
+    if (msg->size < 0)
+        msg->size = 0;
+    if (msg->size > RDT_PKTSIZE - header_size)
+        msg->size = RDT_PKTSIZE - header_size;
 
-    msg->data = (char*) malloc(msg->size);
-    ASSERT(msg->data!=NULL);
-    memcpy(msg->data, pkt->data+header_size, msg->size);
+    msg->data = (char *)malloc(msg->size);
+    ASSERT(msg->data != NULL);
+    memcpy(msg->data, pkt->data + header_size, msg->size);
     Receiver_ToUpperLayer(msg);
 
     /* don't forget to free the space */
-    if (msg->data!=NULL) free(msg->data);
-    if (msg!=NULL) free(msg);
+    if (msg->data != NULL)
+        free(msg->data);
+    if (msg != NULL)
+        free(msg);
 }
