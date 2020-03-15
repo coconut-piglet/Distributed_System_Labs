@@ -67,7 +67,7 @@ void Sender_FromUpperLayer(struct message *msg)
     packet pkt;
 
     /* initiate checksum */
-    unsigned int checksum;
+    unsigned short checksum;
 
     /* the cursor always points to the first unsent byte in the message */
     int cursor = 0;

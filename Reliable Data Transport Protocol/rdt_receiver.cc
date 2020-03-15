@@ -58,6 +58,16 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     /* 3-byte header indicating the checksum of the packet and the size of the payload */
     int header_size = 3;
 
+    /* TODO: perform checksum before further operation */
+    unsigned int checksum;
+    checksum = Receiver_Checksum(pkt);
+    if (memcmp(&checksum, pkt, sizeof(unsigned short)) != 0)
+    {
+        fprintf(stdout, "At %.2fs: receiver receives a corrupted packet\n", GetSimulationTime());
+        return;
+    }
+    fprintf(stdout, "At %.2fs: receiver receives a complete packet\n", GetSimulationTime());
+
     /* construct a message and deliver to the upper layer */
     struct message *msg = (struct message *)malloc(sizeof(struct message));
     ASSERT(msg != NULL);
