@@ -20,10 +20,17 @@
 #include "rdt_struct.h"
 #include "rdt_sender.h"
 
+/* predefined variables */
+#define TIMEOUT 0.3
+
+/* sender ack flag */
+bool sender_ack;
+
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
+    sender_ack = false;
 }
 
 /* sender finalization, called once at the very end.
@@ -109,6 +116,18 @@ void Sender_FromUpperLayer(struct message *msg)
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
+    unsigned short checksum;
+    checksum = Sender_Checksum(pkt);
+    if (memcmp(&checksum, pkt, sizeof(unsigned short)) != 0)
+    {
+        fprintf(stdout, "At %.2fs: sender receives a corrupted ACK\n", GetSimulationTime());
+        return;
+    }
+    //fprintf(stdout, "At %.2fs: sender receives a complete ACK\n", GetSimulationTime());
+
+    int ack_num;
+    memcpy(&ack_num, &pkt->data[2], sizeof(int));
+    /* TODO: inform the sender */
 }
 
 /* event handler, called when the timer expires */

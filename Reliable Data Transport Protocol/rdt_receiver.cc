@@ -51,6 +51,18 @@ unsigned short Receiver_Checksum(struct packet *pkt)
     return checksum;
 }
 
+/* receiver send ack to sender 
+   |<-  2 byte  ->|<-  4 byte  ->|<-             the rest            ->| 
+   |<- checksum ->|<- reserved ->|<-               none              ->| */
+void Receiver_SendACK(int ack_num)
+{
+    packet ackpkt;
+    memcpy(&ackpkt.data[2], &ack_num, sizeof(int));
+    unsigned short checksum = Receiver_Checksum(&ackpkt);
+    memcpy(ackpkt.data, &checksum, sizeof(unsigned short));
+    Receiver_ToLowerLayer(&ackpkt);
+}
+
 /* event handler, called when a packet is passed from the lower layer at the 
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
@@ -66,7 +78,10 @@ void Receiver_FromLowerLayer(struct packet *pkt)
         fprintf(stdout, "At %.2fs: receiver receives a corrupted packet\n", GetSimulationTime());
         return;
     }
-    fprintf(stdout, "At %.2fs: receiver receives a complete packet\n", GetSimulationTime());
+    //fprintf(stdout, "At %.2fs: receiver receives a complete packet\n", GetSimulationTime());
+
+    /* send ACK to sender when a complete packet arrives */
+    Receiver_SendACK(0);
 
     /* construct a message and deliver to the upper layer */
     struct message *msg = (struct message *)malloc(sizeof(struct message));
