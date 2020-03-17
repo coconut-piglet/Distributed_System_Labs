@@ -6,8 +6,8 @@
  *       situations.  In this implementation, the packet format is laid out as 
  *       the following:
  *       
- *       |<-  2 byte  ->|<-  2 byte  ->|<-  2 byte  ->|<-  1 byte  ->|<-             the rest            ->|
- *       |<- checksum ->|  msg number  |  pkt number  | payload size |<-             payload             ->|
+ *       |<-  2 byte  ->|<-   2 byte   ->|<-    1 byte    ->|<-            the rest           ->|
+ *       |<- checksum ->|<- pkt number ->|<- payload size ->|<-            payload            ->|
  *
  *       The first byte of each packet indicates the size of the payload
  *       (excluding this single-byte header)
@@ -67,8 +67,8 @@ void Receiver_SendACK(unsigned int ack_num)
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
-    /* 3-byte header indicating the checksum of the packet and the size of the payload */
-    int header_size = 7;
+    /* 5-byte header indicating the checksum and sequence of the packet and the size of the payload */
+    int header_size = 5;
 
     /* TODO: perform checksum before further operation */
     unsigned int checksum;
@@ -80,10 +80,9 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     }
 
     /* extract msg number and pkt number */
-    unsigned short msg_num, pkt_num;
-    memcpy(&msg_num, &pkt->data[2], sizeof(unsigned short));
-    memcpy(&pkt_num, &pkt->data[4], sizeof(unsigned short));
-    fprintf(stdout, "At %.2fs: receiver receives packet %u of message %u\n", GetSimulationTime(), pkt_num, msg_num);
+    unsigned short pkt_num;
+    memcpy(&pkt_num, &pkt->data[2], sizeof(unsigned short));
+    fprintf(stdout, "At %.2fs: receiver receives packet %u\n", GetSimulationTime(), pkt_num);
 
     /* send ACK to sender when a complete packet arrives */
     Receiver_SendACK(0);
@@ -92,7 +91,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     struct message *msg = (struct message *)malloc(sizeof(struct message));
     ASSERT(msg != NULL);
 
-    msg->size = pkt->data[6];
+    msg->size = pkt->data[4];
 
     /* sanity check in case the packet is corrupted */
     if (msg->size < 0)
