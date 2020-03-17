@@ -6,8 +6,8 @@
  *       situations.  In this implementation, the packet format is laid out as 
  *       the following:
  *       
- *       |<-  2 byte  ->|<-  1 byte  ->|<-             the rest            ->|
- *       |<- checksum ->| payload size |<-             payload             ->|
+ *       |<-  2 byte  ->|<-  2 byte  ->|<-  2 byte  ->|<-  1 byte  ->|<-             the rest            ->|
+ *       |<- checksum ->|  msg number  |  pkt number  | payload size |<-             payload             ->|
  *
  *       The first byte of each packet indicates the size of the payload
  *       (excluding this single-byte header)
@@ -26,11 +26,15 @@
 /* sender ack flag */
 bool sender_ack;
 
+/* sender msg sequence */
+int msg_num;
+
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
     sender_ack = false;
+    msg_num = 0;
 }
 
 /* sender finalization, called once at the very end.
@@ -63,7 +67,7 @@ unsigned short Sender_Checksum(struct packet *pkt)
 void Sender_FromUpperLayer(struct message *msg)
 {
     /* 3-byte header indicating the checksum of the packet and the size of the payload */
-    int header_size = 3;
+    int header_size = 7;
 
     /* maximum payload size */
     int maxpayload_size = RDT_PKTSIZE - header_size;
@@ -76,14 +80,19 @@ void Sender_FromUpperLayer(struct message *msg)
     /* initiate checksum */
     unsigned short checksum;
 
+    /* initiate pkt number */
+    unsigned short pkt_num = 0;
+
     /* the cursor always points to the first unsent byte in the message */
     int cursor = 0;
 
     while (msg->size - cursor > maxpayload_size)
     {
         /* fill in the packet */
-        pkt.data[2] = maxpayload_size;
+        pkt.data[6] = maxpayload_size;
         memcpy(pkt.data + header_size, msg->data + cursor, maxpayload_size);
+        memcpy(&pkt.data[2], &msg_num, sizeof(unsigned short));
+        memcpy(&pkt.data[4], &pkt_num, sizeof(unsigned short));
 
         /* add checksum to the packet */
         checksum = Sender_Checksum(&pkt);
@@ -94,14 +103,19 @@ void Sender_FromUpperLayer(struct message *msg)
 
         /* move the cursor */
         cursor += maxpayload_size;
+
+        /* increase the pkt number */
+        pkt_num++;
     }
 
     /* send out the last packet */
     if (msg->size > cursor)
     {
         /* fill in the packet */
-        pkt.data[2] = msg->size - cursor;
-        memcpy(pkt.data + header_size, msg->data + cursor, pkt.data[2]);
+        pkt.data[6] = msg->size - cursor;
+        memcpy(pkt.data + header_size, msg->data + cursor, pkt.data[6]);
+        memcpy(&pkt.data[2], &msg_num, sizeof(unsigned short));
+        memcpy(&pkt.data[4], &pkt_num, sizeof(unsigned short));
 
         /* add checksum to the packet */
         checksum = Sender_Checksum(&pkt);
@@ -109,6 +123,9 @@ void Sender_FromUpperLayer(struct message *msg)
 
         /* send it out through the lower layer */
         Sender_ToLowerLayer(&pkt);
+
+        /* increase msg number */
+        msg_num++;
     }
 }
 
@@ -123,7 +140,6 @@ void Sender_FromLowerLayer(struct packet *pkt)
         fprintf(stdout, "At %.2fs: sender receives a corrupted ACK\n", GetSimulationTime());
         return;
     }
-    //fprintf(stdout, "At %.2fs: sender receives a complete ACK\n", GetSimulationTime());
 
     int ack_num;
     memcpy(&ack_num, &pkt->data[2], sizeof(int));

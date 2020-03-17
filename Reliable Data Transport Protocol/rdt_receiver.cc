@@ -6,8 +6,8 @@
  *       situations.  In this implementation, the packet format is laid out as 
  *       the following:
  *       
- *       |<-  2 byte  ->|<-  1 byte  ->|<-             the rest            ->|
- *       |<- checksum ->| payload size |<-             payload             ->|
+ *       |<-  2 byte  ->|<-  2 byte  ->|<-  2 byte  ->|<-  1 byte  ->|<-             the rest            ->|
+ *       |<- checksum ->|  msg number  |  pkt number  | payload size |<-             payload             ->|
  *
  *       The first byte of each packet indicates the size of the payload
  *       (excluding this single-byte header)
@@ -54,10 +54,10 @@ unsigned short Receiver_Checksum(struct packet *pkt)
 /* receiver send ack to sender 
    |<-  2 byte  ->|<-  4 byte  ->|<-             the rest            ->| 
    |<- checksum ->|<- reserved ->|<-               none              ->| */
-void Receiver_SendACK(int ack_num)
+void Receiver_SendACK(unsigned int ack_num)
 {
     packet ackpkt;
-    memcpy(&ackpkt.data[2], &ack_num, sizeof(int));
+    memcpy(&ackpkt.data[2], &ack_num, sizeof(unsigned int));
     unsigned short checksum = Receiver_Checksum(&ackpkt);
     memcpy(ackpkt.data, &checksum, sizeof(unsigned short));
     Receiver_ToLowerLayer(&ackpkt);
@@ -68,7 +68,7 @@ void Receiver_SendACK(int ack_num)
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
     /* 3-byte header indicating the checksum of the packet and the size of the payload */
-    int header_size = 3;
+    int header_size = 7;
 
     /* TODO: perform checksum before further operation */
     unsigned int checksum;
@@ -78,7 +78,12 @@ void Receiver_FromLowerLayer(struct packet *pkt)
         fprintf(stdout, "At %.2fs: receiver receives a corrupted packet\n", GetSimulationTime());
         return;
     }
-    //fprintf(stdout, "At %.2fs: receiver receives a complete packet\n", GetSimulationTime());
+
+    /* extract msg number and pkt number */
+    unsigned short msg_num, pkt_num;
+    memcpy(&msg_num, &pkt->data[2], sizeof(unsigned short));
+    memcpy(&pkt_num, &pkt->data[4], sizeof(unsigned short));
+    fprintf(stdout, "At %.2fs: receiver receives packet %u of message %u\n", GetSimulationTime(), pkt_num, msg_num);
 
     /* send ACK to sender when a complete packet arrives */
     Receiver_SendACK(0);
@@ -87,7 +92,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     struct message *msg = (struct message *)malloc(sizeof(struct message));
     ASSERT(msg != NULL);
 
-    msg->size = pkt->data[2];
+    msg->size = pkt->data[6];
 
     /* sanity check in case the packet is corrupted */
     if (msg->size < 0)
