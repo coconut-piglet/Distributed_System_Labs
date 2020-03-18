@@ -23,8 +23,8 @@
 #include "rdt_receiver.h"
 
 /* predefined variables */
-#define BUFFERSIZE 8
-#define DEBUG 1
+#define BUFFERSIZE 16
+#define DEBUG 0
 
 using namespace std;
 

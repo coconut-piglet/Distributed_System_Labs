@@ -23,8 +23,8 @@
 
 /* predefined variables */
 #define TIMEOUT 0.3
-#define WINDOWSIZE 8
-#define DEBUG 1
+#define WINDOWSIZE 16
+#define DEBUG 0
 
 using namespace std;
 
