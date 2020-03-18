@@ -20,10 +20,14 @@
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
 
+/* receiver pkt sequence */
+int next;
+
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
 {
     fprintf(stdout, "At %.2fs: receiver initializing ...\n", GetSimulationTime());
+    next = 0;
 }
 
 /* receiver finalization, called once at the very end.
@@ -87,6 +91,18 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     /* send ACK to sender when a complete packet arrives */
     Receiver_SendACK(pkt_num);
 
+    /* check whether this pkt is contiguous with the previous one or is a duplicate of certain previous packet*/
+    if (pkt_num > next)
+    {
+        fprintf(stdout, "At %.2fs: but packet %u has not arrived, drop it\n", GetSimulationTime(), next);
+        return;
+    }
+    else if (pkt_num < next)
+    {
+        fprintf(stdout, "At %.2fs: got a duplicate of packet %u, drop it\n", GetSimulationTime(), pkt_num);
+        return;
+    }
+
     /* construct a message and deliver to the upper layer */
     struct message *msg = (struct message *)malloc(sizeof(struct message));
     ASSERT(msg != NULL);
@@ -103,6 +119,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     ASSERT(msg->data != NULL);
     memcpy(msg->data, pkt->data + header_size, msg->size);
     Receiver_ToUpperLayer(msg);
+    next++;
 
     /* don't forget to free the space */
     if (msg->data != NULL)
