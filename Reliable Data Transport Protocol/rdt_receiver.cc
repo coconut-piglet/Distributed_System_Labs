@@ -202,5 +202,8 @@ void Receiver_FromLowerLayer(struct packet *pkt)
             free(msg->data);
         if (msg != NULL)
             free(msg);
+
+        if (received_num_buffer.empty())
+            break;
     }
 }
