@@ -16,18 +16,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
+#include <deque>
 
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
 
+/* predefined variables */
+#define BUFFERSIZE 4
+
+using namespace std;
+
 /* receiver pkt sequence */
-int next;
+unsigned short next_num;
+
+/* pkt buffer */
+deque<struct packet> received_pkt_buffer;
+deque<unsigned short> received_num_buffer;
 
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
 {
     fprintf(stdout, "At %.2fs: receiver initializing ...\n", GetSimulationTime());
-    next = 0;
+    next_num = 0;
 }
 
 /* receiver finalization, called once at the very end.
@@ -71,9 +82,6 @@ void Receiver_SendACK(unsigned short ack_num)
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
-    /* 5-byte header indicating the checksum and sequence of the packet and the size of the payload */
-    int header_size = 5;
-
     /* perform checksum before further operation */
     unsigned int checksum;
     checksum = Receiver_Checksum(pkt);
@@ -88,42 +96,94 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     memcpy(&pkt_num, &pkt->data[2], sizeof(unsigned short));
     fprintf(stdout, "At %.2fs: receiver receives packet %u\n", GetSimulationTime(), pkt_num);
 
-    /* send ACK to sender when a complete packet arrives */
+    /* perform pkt_num check */
+    if (pkt_num > next_num + BUFFERSIZE - 1)
+    {
+        /* check whether this packet arrives too soon, if so, drop it without sending ACK */
+        fprintf(stdout, "At %.2fs: packet %u reaches too early, can not store packet later than %u\n", GetSimulationTime(), pkt_num, next_num + BUFFERSIZE - 1);
+        return;
+    }
+    else if (pkt_num < next_num)
+    {
+        /* check whether this packet is a duplicate of certain previous packet */
+        fprintf(stdout, "At %.2fs: got a duplicate of already received packet %u, drop it\n", GetSimulationTime(), pkt_num);
+        /* send ACK in case the previous ACK is corrupted */
+        Receiver_SendACK(pkt_num);
+        return;
+    }
+    else if (find(received_num_buffer.begin(), received_num_buffer.end(), pkt_num) != received_num_buffer.end())
+    {
+        /* check whether this packet is a duplicate of certain buffered packet */
+        fprintf(stdout, "At %.2fs: got a duplicate of already buffered packet %u, drop it\n", GetSimulationTime(), pkt_num);
+        /* send ACK in case the previous ACK is corrupted */
+        Receiver_SendACK(pkt_num);
+        return;
+    }
+
+    /* send ACK to sender when a complete new packet arrives */
     Receiver_SendACK(pkt_num);
 
-    /* check whether this pkt is contiguous with the previous one or is a duplicate of certain previous packet*/
-    if (pkt_num > next)
+    /* the capacity left is checked by the caller, so it's safe to add it to buffer here */
+    fprintf(stdout, "At %.2fs: receiver buffers packet %u\n", GetSimulationTime(), pkt_num);
+    received_num_buffer.push_front(pkt_num);
+    received_pkt_buffer.push_front(*pkt);
+
+    /* but the order needs to be rearranged */
+    for (unsigned int i = 1; i < received_num_buffer.size(); i++)
     {
-        fprintf(stdout, "At %.2fs: but packet %u has not arrived, drop it\n", GetSimulationTime(), next);
-        return;
+        if (received_num_buffer[i] < received_num_buffer[i - 1])
+        {
+            swap(received_num_buffer[i], received_num_buffer[i - 1]);
+            swap(received_pkt_buffer[i], received_pkt_buffer[i - 1]);
+        }
+        else
+        {
+            break;
+        }
     }
-    else if (pkt_num < next)
+
+    /* display buffer status */
+    fprintf(stdout, "At %.2fs: receiver buffers size: %lu\n", GetSimulationTime(), received_num_buffer.size());
+    fprintf(stdout, "At %.2fs: receiver buffers content: |", GetSimulationTime());
+    for (unsigned int i = 0; i < received_num_buffer.size(); i++)
     {
-        fprintf(stdout, "At %.2fs: got a duplicate of packet %u, drop it\n", GetSimulationTime(), pkt_num);
-        return;
+        fprintf(stdout, "%u|", received_num_buffer[i]);
     }
+    fprintf(stdout, "\n");
 
-    /* construct a message and deliver to the upper layer */
-    struct message *msg = (struct message *)malloc(sizeof(struct message));
-    ASSERT(msg != NULL);
+    /* 5-byte header indicating the checksum and sequence of the packet and the size of the payload */
+    int header_size = 5;
 
-    msg->size = pkt->data[4];
+    /* then check whether there exists continuous packets start from next_num */
+    while (received_num_buffer.front() == next_num)
+    {
+        /* construct a message and deliver to the upper layer */
+        struct message *msg = (struct message *)malloc(sizeof(struct message));
+        ASSERT(msg != NULL);
 
-    /* sanity check in case the packet is corrupted */
-    if (msg->size < 0)
-        msg->size = 0;
-    if (msg->size > RDT_PKTSIZE - header_size)
-        msg->size = RDT_PKTSIZE - header_size;
+        msg->size = received_pkt_buffer.front().data[4];
 
-    msg->data = (char *)malloc(msg->size);
-    ASSERT(msg->data != NULL);
-    memcpy(msg->data, pkt->data + header_size, msg->size);
-    Receiver_ToUpperLayer(msg);
-    next++;
+        /* sanity check in case the packet is corrupted */
+        if (msg->size < 0)
+            msg->size = 0;
+        if (msg->size > RDT_PKTSIZE - header_size)
+            msg->size = RDT_PKTSIZE - header_size;
 
-    /* don't forget to free the space */
-    if (msg->data != NULL)
-        free(msg->data);
-    if (msg != NULL)
-        free(msg);
+        msg->data = (char *)malloc(msg->size);
+        ASSERT(msg->data != NULL);
+        memcpy(msg->data, received_pkt_buffer.front().data + header_size, msg->size);
+        Receiver_ToUpperLayer(msg);
+
+        /* remove the packet from buffer and increase the next_num */
+        fprintf(stdout, "At %.2fs: buffer head arrives, shift buffer\n", GetSimulationTime());
+        received_num_buffer.pop_front();
+        received_pkt_buffer.pop_front();
+        next_num++;
+
+        /* don't forget to free the space */
+        if (msg->data != NULL)
+            free(msg->data);
+        if (msg != NULL)
+            free(msg);
+    }
 }

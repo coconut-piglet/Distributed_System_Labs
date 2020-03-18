@@ -36,6 +36,7 @@ unsigned short pkt_num;
 /* pkt buffer */
 deque<struct packet> pkt_buffer;
 deque<unsigned short> num_buffer;
+deque<bool> ack_buffer;
 
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
@@ -75,6 +76,7 @@ void Sender_HandleBufferChange(struct packet *pkt, unsigned int pkt_num)
     /* add new packet and its number to their buffer */
     pkt_buffer.push_back(*pkt);
     num_buffer.push_back(pkt_num);
+    ack_buffer.push_back(false);
 
     /* if buffer is not filled before insertion, send the newly added packet */
     if (num_buffer.size() <= WINDOWSIZE)
@@ -173,15 +175,36 @@ void Sender_FromLowerLayer(struct packet *pkt)
     /* if the first packet in the buffer got its ACK */
     if (ack_num == num_buffer.front())
     {
-        /* remove it from the buffer and shift the window */
-        num_buffer.pop_front();
-        pkt_buffer.pop_front();
+        /* remove continuous acknowledged packet from the buffer and shift the window */
+        ack_buffer.front() = true;
+        int windows_shift_times = 0;
+        while (ack_buffer.front())
+        {
+            num_buffer.pop_front();
+            pkt_buffer.pop_front();
+            ack_buffer.pop_front();
+            windows_shift_times++;
+        }
 
-        /* if new packet appears, send it, if not, do nothing */
-        if (num_buffer.size() >= WINDOWSIZE)
+        /* send newly entered packets, up to windows_shift_times */
+        int buffered_pkt_num = WINDOWSIZE > num_buffer.size() ? num_buffer.size() : WINDOWSIZE;
+        for (int i = WINDOWSIZE - windows_shift_times; i < buffered_pkt_num; i++)
         {
             Sender_StartTimer(TIMEOUT);
-            Sender_ToLowerLayer(&pkt_buffer[WINDOWSIZE - 1]);
+            Sender_ToLowerLayer(&pkt_buffer[i]);
+        }
+    }
+    else
+    {
+        /* if other packet in the buffer got its ACK before the first one, mark it so that it won't be send twice */
+        int buffered_pkt_num = WINDOWSIZE > num_buffer.size() ? num_buffer.size() : WINDOWSIZE;
+        for (int i = 0; i < buffered_pkt_num; i++)
+        {
+            if (num_buffer[i] == ack_num)
+            {
+                ack_buffer[i] = true;
+                break;
+            }
         }
     }
 }
@@ -199,11 +222,15 @@ void Sender_Timeout()
     /* restart the timer */
     Sender_StartTimer(TIMEOUT);
 
-    /* resend all packet in buffered area */
+    /* resend selective packet in buffered area */
     int buffered_pkt_num = WINDOWSIZE > num_buffer.size() ? num_buffer.size() : WINDOWSIZE;
     for (int i = 0; i < buffered_pkt_num; i++)
     {
-        fprintf(stdout, "At %.2fs: sender resend packet %u\n", GetSimulationTime(), num_buffer[i]);
-        Sender_ToLowerLayer(&pkt_buffer[i]);
+        /* if packet has not received its ACK, resend it, otherwise do nothing */
+        if (!ack_buffer[i])
+        {
+            fprintf(stdout, "At %.2fs: sender resend packet %u\n", GetSimulationTime(), num_buffer[i]);
+            Sender_ToLowerLayer(&pkt_buffer[i]);
+        }
     }
 }
