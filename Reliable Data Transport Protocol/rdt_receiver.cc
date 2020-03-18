@@ -23,7 +23,8 @@
 #include "rdt_receiver.h"
 
 /* predefined variables */
-#define BUFFERSIZE 4
+#define BUFFERSIZE 8
+#define DEBUG 1
 
 using namespace std;
 
@@ -37,7 +38,8 @@ deque<unsigned short> received_num_buffer;
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
 {
-    fprintf(stdout, "At %.2fs: receiver initializing ...\n", GetSimulationTime());
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: receiver initializing ...\n", GetSimulationTime());
     next_num = 0;
 }
 
@@ -47,7 +49,8 @@ void Receiver_Init()
    memory you allocated in Receiver_init(). */
 void Receiver_Final()
 {
-    fprintf(stdout, "At %.2fs: receiver finalizing ...\n", GetSimulationTime());
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: receiver finalizing ...\n", GetSimulationTime());
 }
 
 /* receiver checksum */
@@ -78,6 +81,18 @@ void Receiver_SendACK(unsigned short ack_num)
     Receiver_ToLowerLayer(&ackpkt);
 }
 
+void Receiver_DisplayBufferStatus()
+{
+    fprintf(stdout, "At %.2fs: receiver buffers size: %lu\n", GetSimulationTime(), received_num_buffer.size());
+    fprintf(stdout, "At %.2fs: receiver buffers head: %u\n", GetSimulationTime(), next_num);
+    fprintf(stdout, "At %.2fs: receiver buffers content: |", GetSimulationTime());
+    for (unsigned int i = 0; i < received_num_buffer.size(); i++)
+    {
+        fprintf(stdout, "%u|", received_num_buffer[i]);
+    }
+    fprintf(stdout, "\n");
+}
+
 /* event handler, called when a packet is passed from the lower layer at the 
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
@@ -87,26 +102,30 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     checksum = Receiver_Checksum(pkt);
     if (memcmp(&checksum, pkt, sizeof(unsigned short)) != 0)
     {
-        fprintf(stdout, "At %.2fs: receiver receives a corrupted packet\n", GetSimulationTime());
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: receiver receives a corrupted packet\n", GetSimulationTime());
         return;
     }
 
     /* extract msg number and pkt number */
     unsigned short pkt_num;
     memcpy(&pkt_num, &pkt->data[2], sizeof(unsigned short));
-    fprintf(stdout, "At %.2fs: receiver receives packet %u\n", GetSimulationTime(), pkt_num);
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: receiver receives packet %u\n", GetSimulationTime(), pkt_num);
 
     /* perform pkt_num check */
     if (pkt_num > next_num + BUFFERSIZE - 1)
     {
         /* check whether this packet arrives too soon, if so, drop it without sending ACK */
-        fprintf(stdout, "At %.2fs: packet %u reaches too early, can not store packet later than %u\n", GetSimulationTime(), pkt_num, next_num + BUFFERSIZE - 1);
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: packet %u reaches too early, can not store packet later than %u\n", GetSimulationTime(), pkt_num, next_num + BUFFERSIZE - 1);
         return;
     }
     else if (pkt_num < next_num)
     {
         /* check whether this packet is a duplicate of certain previous packet */
-        fprintf(stdout, "At %.2fs: got a duplicate of already received packet %u, drop it\n", GetSimulationTime(), pkt_num);
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: got a duplicate of already received packet %u, drop it\n", GetSimulationTime(), pkt_num);
         /* send ACK in case the previous ACK is corrupted */
         Receiver_SendACK(pkt_num);
         return;
@@ -114,7 +133,8 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     else if (find(received_num_buffer.begin(), received_num_buffer.end(), pkt_num) != received_num_buffer.end())
     {
         /* check whether this packet is a duplicate of certain buffered packet */
-        fprintf(stdout, "At %.2fs: got a duplicate of already buffered packet %u, drop it\n", GetSimulationTime(), pkt_num);
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: got a duplicate of already buffered packet %u, drop it\n", GetSimulationTime(), pkt_num);
         /* send ACK in case the previous ACK is corrupted */
         Receiver_SendACK(pkt_num);
         return;
@@ -124,7 +144,8 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     Receiver_SendACK(pkt_num);
 
     /* the capacity left is checked by the caller, so it's safe to add it to buffer here */
-    fprintf(stdout, "At %.2fs: receiver buffers packet %u\n", GetSimulationTime(), pkt_num);
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: receiver buffers packet %u\n", GetSimulationTime(), pkt_num);
     received_num_buffer.push_front(pkt_num);
     received_pkt_buffer.push_front(*pkt);
 
@@ -143,13 +164,8 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     }
 
     /* display buffer status */
-    fprintf(stdout, "At %.2fs: receiver buffers size: %lu\n", GetSimulationTime(), received_num_buffer.size());
-    fprintf(stdout, "At %.2fs: receiver buffers content: |", GetSimulationTime());
-    for (unsigned int i = 0; i < received_num_buffer.size(); i++)
-    {
-        fprintf(stdout, "%u|", received_num_buffer[i]);
-    }
-    fprintf(stdout, "\n");
+    if (DEBUG)
+        Receiver_DisplayBufferStatus();
 
     /* 5-byte header indicating the checksum and sequence of the packet and the size of the payload */
     int header_size = 5;
@@ -175,7 +191,8 @@ void Receiver_FromLowerLayer(struct packet *pkt)
         Receiver_ToUpperLayer(msg);
 
         /* remove the packet from buffer and increase the next_num */
-        fprintf(stdout, "At %.2fs: buffer head arrives, shift buffer\n", GetSimulationTime());
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: buffer head arrives, shift buffer\n", GetSimulationTime());
         received_num_buffer.pop_front();
         received_pkt_buffer.pop_front();
         next_num++;

@@ -22,8 +22,9 @@
 #include "rdt_sender.h"
 
 /* predefined variables */
-#define TIMEOUT 2
-#define WINDOWSIZE 4
+#define TIMEOUT 0.3
+#define WINDOWSIZE 8
+#define DEBUG 1
 
 using namespace std;
 
@@ -41,8 +42,11 @@ deque<bool> ack_buffer;
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
-    fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
     sender_ack = false;
+
+    /* packet number starts from zero */
     pkt_num = 0;
 }
 
@@ -52,7 +56,13 @@ void Sender_Init()
    memory you allocated in Sender_init(). */
 void Sender_Final()
 {
-    fprintf(stdout, "At %.2fs: sender finalizing ...\n", GetSimulationTime());
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: sender finalizing ...\n", GetSimulationTime());
+
+    /* clean all buffered data */
+    pkt_buffer.clear();
+    num_buffer.clear();
+    ack_buffer.clear();
 }
 
 /* sender checksum */
@@ -71,17 +81,50 @@ unsigned short Sender_Checksum(struct packet *pkt)
     return checksum;
 }
 
+/* display current buffer status*/
+void Sender_DisplayBufferStatus()
+{
+    fprintf(stdout, "At %.2fs: sender pkt buffers size: %lu\n", GetSimulationTime(), pkt_buffer.size());
+    fprintf(stdout, "At %.2fs: sender num buffers size: %lu\n", GetSimulationTime(), num_buffer.size());
+    fprintf(stdout, "At %.2fs: sender ack buffers size: %lu\n", GetSimulationTime(), ack_buffer.size());
+    int buffered_pkt_num = WINDOWSIZE > num_buffer.size() ? num_buffer.size() : WINDOWSIZE;
+    fprintf(stdout, "At %.2fs: sender buffers content: |", GetSimulationTime());
+    for (int i = 0; i < buffered_pkt_num; i++)
+    {
+        fprintf(stdout, "%u|", num_buffer[i]);
+    }
+    fprintf(stdout, "\n");
+    fprintf(stdout, "At %.2fs: sender buffers ack status: |", GetSimulationTime());
+    for (int i = 0; i < buffered_pkt_num; i++)
+    {
+        if (ack_buffer[i])
+        {
+            fprintf(stdout, "true|");
+        }
+        else
+        {
+            fprintf(stdout, "false|");
+        }
+    }
+    fprintf(stdout, "\n");
+}
+
+/* sender handle new buffer */
 void Sender_HandleBufferChange(struct packet *pkt, unsigned int pkt_num)
 {
     /* add new packet and its number to their buffer */
     pkt_buffer.push_back(*pkt);
     num_buffer.push_back(pkt_num);
     ack_buffer.push_back(false);
+    if (DEBUG)
+        Sender_DisplayBufferStatus();
 
     /* if buffer is not filled before insertion, send the newly added packet */
     if (num_buffer.size() <= WINDOWSIZE)
     {
         Sender_StartTimer(TIMEOUT);
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: sender send packet %u\n", GetSimulationTime(), num_buffer.back());
         Sender_ToLowerLayer(&pkt_buffer.back());
     }
 }
@@ -118,9 +161,6 @@ void Sender_FromUpperLayer(struct message *msg)
         checksum = Sender_Checksum(&pkt);
         memcpy(pkt.data, &checksum, sizeof(unsigned short));
 
-        /* send it out through the lower layer */
-        /* Sender_ToLowerLayer(&pkt); */
-
         /* add it to buffer */
         Sender_HandleBufferChange(&pkt, pkt_num);
 
@@ -143,9 +183,6 @@ void Sender_FromUpperLayer(struct message *msg)
         checksum = Sender_Checksum(&pkt);
         memcpy(pkt.data, &checksum, sizeof(unsigned short));
 
-        /* send it out through the lower layer */
-        /* Sender_ToLowerLayer(&pkt); */
-
         /* add it to buffer */
         Sender_HandleBufferChange(&pkt, pkt_num);
 
@@ -163,14 +200,16 @@ void Sender_FromLowerLayer(struct packet *pkt)
     checksum = Sender_Checksum(pkt);
     if (memcmp(&checksum, pkt, sizeof(unsigned short)) != 0)
     {
-        fprintf(stdout, "At %.2fs: sender receives a corrupted ACK\n", GetSimulationTime());
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: sender receives a corrupted ACK\n", GetSimulationTime());
         return;
     }
 
     /* extract ack_num from ACK packet */
     unsigned short ack_num;
     memcpy(&ack_num, &pkt->data[2], sizeof(unsigned short));
-    fprintf(stdout, "At %.2fs: sender receives ACK %u\n", GetSimulationTime(), ack_num);
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: sender receives ACK %u\n", GetSimulationTime(), ack_num);
 
     /* if the first packet in the buffer got its ACK */
     if (ack_num == num_buffer.front())
@@ -184,7 +223,12 @@ void Sender_FromLowerLayer(struct packet *pkt)
             pkt_buffer.pop_front();
             ack_buffer.pop_front();
             windows_shift_times++;
+            if (ack_buffer.empty())
+                break;
         }
+
+        if (DEBUG)
+            Sender_DisplayBufferStatus();
 
         /* send newly entered packets, up to windows_shift_times */
         int buffered_pkt_num = WINDOWSIZE > num_buffer.size() ? num_buffer.size() : WINDOWSIZE;
@@ -212,10 +256,12 @@ void Sender_FromLowerLayer(struct packet *pkt)
 /* event handler, called when the timer expires */
 void Sender_Timeout()
 {
-    fprintf(stdout, "At %.2fs: sender times out\n", GetSimulationTime());
+    if (DEBUG)
+        fprintf(stdout, "At %.2fs: sender times out\n", GetSimulationTime());
     if (num_buffer.size() == 0)
     {
-        fprintf(stdout, "At %.2fs: no packet in buffer, timer stops\n", GetSimulationTime());
+        if (DEBUG)
+            fprintf(stdout, "At %.2fs: no packet in buffer, timer stops\n", GetSimulationTime());
         return;
     }
 
@@ -229,7 +275,8 @@ void Sender_Timeout()
         /* if packet has not received its ACK, resend it, otherwise do nothing */
         if (!ack_buffer[i])
         {
-            fprintf(stdout, "At %.2fs: sender resend packet %u\n", GetSimulationTime(), num_buffer[i]);
+            if (DEBUG)
+                fprintf(stdout, "At %.2fs: sender resend packet %u\n", GetSimulationTime(), num_buffer[i]);
             Sender_ToLowerLayer(&pkt_buffer[i]);
         }
     }
