@@ -16,18 +16,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <deque>
 
 #include "rdt_struct.h"
 #include "rdt_sender.h"
 
 /* predefined variables */
-#define TIMEOUT 0.3
+#define TIMEOUT 2
+#define WINDOWSIZE 4
+
+using namespace std;
 
 /* sender ack flag */
 bool sender_ack;
 
 /* sender pkt sequence */
-int pkt_num;
+unsigned short pkt_num;
+
+/* pkt buffer */
+deque<struct packet> pkt_buffer;
+deque<unsigned short> num_buffer;
 
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
@@ -60,6 +68,20 @@ unsigned short Sender_Checksum(struct packet *pkt)
     tmp += (tmp >> 16);
     checksum = ~tmp;
     return checksum;
+}
+
+void Sender_HandleBufferChange(struct packet *pkt, unsigned int pkt_num)
+{
+    /* add new packet and its number to their buffer */
+    pkt_buffer.push_back(*pkt);
+    num_buffer.push_back(pkt_num);
+
+    /* if buffer is not filled before insertion, send the newly added packet */
+    if (num_buffer.size() <= WINDOWSIZE)
+    {
+        Sender_StartTimer(TIMEOUT);
+        Sender_ToLowerLayer(&pkt_buffer.back());
+    }
 }
 
 /* event handler, called when a message is passed from the upper layer at the 
@@ -95,7 +117,10 @@ void Sender_FromUpperLayer(struct message *msg)
         memcpy(pkt.data, &checksum, sizeof(unsigned short));
 
         /* send it out through the lower layer */
-        Sender_ToLowerLayer(&pkt);
+        /* Sender_ToLowerLayer(&pkt); */
+
+        /* add it to buffer */
+        Sender_HandleBufferChange(&pkt, pkt_num);
 
         /* move the cursor */
         cursor += maxpayload_size;
@@ -111,14 +136,19 @@ void Sender_FromUpperLayer(struct message *msg)
         pkt.data[4] = msg->size - cursor;
         memcpy(pkt.data + header_size, msg->data + cursor, pkt.data[4]);
         memcpy(&pkt.data[2], &pkt_num, sizeof(unsigned short));
-        pkt_num++;
 
         /* add checksum to the packet */
         checksum = Sender_Checksum(&pkt);
         memcpy(pkt.data, &checksum, sizeof(unsigned short));
 
         /* send it out through the lower layer */
-        Sender_ToLowerLayer(&pkt);
+        /* Sender_ToLowerLayer(&pkt); */
+
+        /* add it to buffer */
+        Sender_HandleBufferChange(&pkt, pkt_num);
+
+        /* increase the pkt number */
+        pkt_num++;
     }
 }
 
@@ -126,6 +156,7 @@ void Sender_FromUpperLayer(struct message *msg)
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
+    /* perform checksum before further operation */
     unsigned short checksum;
     checksum = Sender_Checksum(pkt);
     if (memcmp(&checksum, pkt, sizeof(unsigned short)) != 0)
@@ -134,12 +165,45 @@ void Sender_FromLowerLayer(struct packet *pkt)
         return;
     }
 
-    int ack_num;
-    memcpy(&ack_num, &pkt->data[2], sizeof(int));
-    /* TODO: inform the sender */
+    /* extract ack_num from ACK packet */
+    unsigned short ack_num;
+    memcpy(&ack_num, &pkt->data[2], sizeof(unsigned short));
+    fprintf(stdout, "At %.2fs: sender receives ACK %u\n", GetSimulationTime(), ack_num);
+
+    /* if the first packet in the buffer got its ACK */
+    if (ack_num == num_buffer.front())
+    {
+        /* remove it from the buffer and shift the window */
+        num_buffer.pop_front();
+        pkt_buffer.pop_front();
+
+        /* if new packet appears, send it, if not, do nothing */
+        if (num_buffer.size() >= WINDOWSIZE)
+        {
+            Sender_StartTimer(TIMEOUT);
+            Sender_ToLowerLayer(&pkt_buffer[WINDOWSIZE - 1]);
+        }
+    }
 }
 
 /* event handler, called when the timer expires */
 void Sender_Timeout()
 {
+    fprintf(stdout, "At %.2fs: sender times out\n", GetSimulationTime());
+    if (num_buffer.size() == 0)
+    {
+        fprintf(stdout, "At %.2fs: no packet in buffer, timer stops\n", GetSimulationTime());
+        return;
+    }
+
+    /* restart the timer */
+    Sender_StartTimer(TIMEOUT);
+
+    /* resend all packet in buffered area */
+    int buffered_pkt_num = WINDOWSIZE > num_buffer.size() ? num_buffer.size() : WINDOWSIZE;
+    for (int i = 0; i < buffered_pkt_num; i++)
+    {
+        fprintf(stdout, "At %.2fs: sender resend packet %u\n", GetSimulationTime(), num_buffer[i]);
+        Sender_ToLowerLayer(&pkt_buffer[i]);
+    }
 }

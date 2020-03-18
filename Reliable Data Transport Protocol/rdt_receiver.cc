@@ -52,12 +52,12 @@ unsigned short Receiver_Checksum(struct packet *pkt)
 }
 
 /* receiver send ack to sender 
-   |<-  2 byte  ->|<-  4 byte  ->|<-             the rest            ->| 
-   |<- checksum ->|<- reserved ->|<-               none              ->| */
-void Receiver_SendACK(unsigned int ack_num)
+   |<-  2 byte  ->|<-   2 byte  - >|<-             the rest            ->| 
+   |<- checksum ->|<- pkt number ->|<-               none              ->| */
+void Receiver_SendACK(unsigned short ack_num)
 {
     packet ackpkt;
-    memcpy(&ackpkt.data[2], &ack_num, sizeof(unsigned int));
+    memcpy(&ackpkt.data[2], &ack_num, sizeof(unsigned short));
     unsigned short checksum = Receiver_Checksum(&ackpkt);
     memcpy(ackpkt.data, &checksum, sizeof(unsigned short));
     Receiver_ToLowerLayer(&ackpkt);
@@ -70,7 +70,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     /* 5-byte header indicating the checksum and sequence of the packet and the size of the payload */
     int header_size = 5;
 
-    /* TODO: perform checksum before further operation */
+    /* perform checksum before further operation */
     unsigned int checksum;
     checksum = Receiver_Checksum(pkt);
     if (memcmp(&checksum, pkt, sizeof(unsigned short)) != 0)
@@ -85,7 +85,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     fprintf(stdout, "At %.2fs: receiver receives packet %u\n", GetSimulationTime(), pkt_num);
 
     /* send ACK to sender when a complete packet arrives */
-    Receiver_SendACK(0);
+    Receiver_SendACK(pkt_num);
 
     /* construct a message and deliver to the upper layer */
     struct message *msg = (struct message *)malloc(sizeof(struct message));
