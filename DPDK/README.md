@@ -90,7 +90,31 @@ Q2: Take examples/helloworld as an example, describe the execution flow of DPDK 
 
 Q3: Read the codes of examples/skeleton, describe DPDK APIs related to sending and receiving packets\.
 
-* 
+* rte\_eth\_tx\_burst\(\)，定义如下：
+
+  ```c++
+  static uint16_t rte_eth_tx_burst (
+      uint16_t port_id,
+      uint16_t queue_id,
+      struct rte_mbuf ** tx_pkts,
+      uint16_t nb_pkts
+  )
+  ```
+
+  用于在参数port\_id指定的以太网设备上发送参数queue\_id指定的输出队列上的数据包，参数nb\_pkts指定了要发送的数据包的数量，这些数据包由rte\_mbuf结构的参数tx\_pkts提供，函数返回实际发送的包的数量。
+
+* rte\_eth\_rx\_burst\(\)，定义如下：
+
+  ```c++
+  static uint16_t rte_eth_rx_burst (
+      uint16_t port_id,
+      uint16_t queue_id,
+      struct rte_mbuf ** rx_pkts,
+      const uint16_t nb_pkts
+  )	
+  ```
+
+  用于在参数port\_id指定的以太网设备上的由参数queue\_id指定的接收队列上循环解析RX ring，最多nb\_pkts个包，并且对于每一个完整的RX descriptor，初始化一个rte\_mbuf结构的数据，并存放到参数tx\_pkts的下一个目录。
 
 Q4: Describe the data structure of ‘rte\_mbuf’\.
 
