@@ -1,6 +1,6 @@
 # Send and receive packets with DPDK
 
-# Part 0
+## Part 0 Set up environment
 
 基础环境：Ubuntu 18.04 LTS
 
@@ -50,5 +50,53 @@ hello from core 3
 hello from core 0
 ```
 
-## Part 1
+## Part 1 Get familiar with DPDK
+
+Q1: What’s the purpose of using hugepage?
+
+* 在内存容量不变的条件下，页越大，页表项越少，页表占用的内存越少。更少的页表项意味着缺页的情况更不容易发生，缺页中断的次数会减少，TLB的miss次数也会减少。
+
+Q2: Take examples/helloworld as an example, describe the execution flow of DPDK programs?
+
+* 初始化Environment Abstraction Layer \(EAL\)，在main\(\)函数中：
+
+  ```c++
+  ret = rte_eal_init(argc, argv);
+  if (ret < 0)
+  	rte_panic("Cannot init EAL\n");
+  ```
+
+  在Linux环境下该调用在main\(\)被调用前完成初始化流程（每个lcore的初始化等），返回的是参数的个数。
+
+* 在从属核心上调用lcore\_hello\(\)：
+
+  ```c++
+  RTE_LCORE_FOREACH_SLAVE(lcore_id) {
+  	rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
+  }
+  ```
+
+* 在主核心上调用lcore\_hello\(\)：
+
+  ```c++
+  lcore_hello(NULL);
+  ```
+
+* 最后等待所有线程执行结束：
+
+  ```c++
+  rte_eal_mp_wait_lcore();
+  ```
+
+Q3: Read the codes of examples/skeleton, describe DPDK APIs related to sending and receiving packets\.
+
+* 
+
+Q4: Describe the data structure of ‘rte\_mbuf’\.
+
+* 
+
+## Part 2 Send packets with DPDK
+
+
 
