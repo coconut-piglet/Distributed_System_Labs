@@ -276,5 +276,39 @@ Q4: Describe the data structure of ‘rte\_mbuf’\.
 
 ## Part 2 Send packets with DPDK
 
+1. **Construct UDP packets**
 
+   | 最外面    | 第二外面 | 里面    | 最里面 |
+   | --------- | -------- | ------- | ------ |
+   | ETHER_HDR | IPV4_HDR | UDP_HDR | DATA   |
 
+   由于markdown表格必须两行无奈加上了奇怪的第一行，定义如下：
+
+   ```c++
+   struct Packet {
+   	struct rte_ether_hdr ether_hdr;
+   	struct rte_ipv4_hdr ipv4_hdr;
+   	struct rte_udp_hdr udp_hdr;
+   	struct rte_data data;
+   };
+   ```
+
+   其中数据部分定义如下：
+
+   ```c++
+   struct rte_data {
+   	char content[16];
+   };
+   ```
+
+2. **Write a DPDK application to construct and send UDP packets**
+
+   **配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装！**
+
+   具体代码参见main\.c文件，发包的内容为“Hello,Wireshark!”。
+
+3. **Verify the correctness**
+
+   用Wireshark捕获到包的内容如下：
+
+   ![wireshark](wireshark.png)
