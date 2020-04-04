@@ -10,7 +10,7 @@
 $ sudo apt install libpcap-dev
 ```
 
-~~下载DPDK，我选了目前LTS分支的最新版本19\.11，~~根据TA的要求更换为指定版本16\.11\.11，解压后执行：
+~~下载DPDK，我选了目前LTS分支的最新版本19\.11~~根据TA的要求更换为指定版本16\.11\.11，解压后执行：
 
 ```shell
  $ make config T=x86_64-native-linuxapp-gcc
@@ -303,7 +303,7 @@ Q4: Describe the data structure of ‘rte\_mbuf’\.
 
 2. **Write a DPDK application to construct and send UDP packets**
 
-   ~~**配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装！**~~降级后无此问题
+   ~~配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装！~~降级后无此问题
 
    具体代码参见main\.c文件，发包的内容为“Hello,Wireshark!”。
 
