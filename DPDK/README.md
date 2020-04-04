@@ -303,7 +303,7 @@ Q4: Describe the data structure of ‘rte\_mbuf’\.
 
 2. **Write a DPDK application to construct and send UDP packets**
 
-   ~~配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装！~~降级后无此问题
+   ~~配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装~~降级后无此问题
 
    具体代码参见main\.c文件，发包的内容为“Hello,Wireshark!”。
 
