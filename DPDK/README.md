@@ -2,18 +2,18 @@
 
 ## Part 0 Set up environment
 
-基础环境：Ubuntu 18.04 LTS
+基础环境：~~Ubuntu 18.04 LTS~~降级DPDK后各种报错又把Ubuntu 16.04 LTS装回来了
 
 安装依赖：
 
 ```shell
-$ sudo apt install build-essential libnuma-dev libpcap-dev python
+$ sudo apt install libpcap-dev
 ```
 
-下载DPDK，我选了目前LTS分支的最新版本19\.11，解压进入目录后执行：
+~~下载DPDK，我选了目前LTS分支的最新版本19\.11，~~根据TA的要求更换为指定版本16\.11\.11，解压后执行：
 
 ```shell
- $ make install T=x86_64-native-linuxapp-gcc
+ $ make config T=x86_64-native-linuxapp-gcc
  $ sed -ri 's,(PMD_PCAP=).*,\1y,' build/.config
  $ make
 ```
@@ -26,8 +26,8 @@ $ mount -t hugetlbfs nodev /mnt/huge
 $ echo 64 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
 $ modprobe uio
 $ insmod ./build/kmod/igb_uio.ko
-$ ./usertools/dpdk-devbind.py -s
-$ ./usertools/dpdk-devbind.py --bind=igb_uio 02:00.0
+$ ./tools/dpdk-devbind.py -s
+$ ./tools/dpdk-devbind.py --bind=igb_uio 02:00.0
 $ export RTE_SDK=/home/richard/Desktop/dpdk
 $ export RTE_TARGET=build
 ```
@@ -303,7 +303,7 @@ Q4: Describe the data structure of ‘rte\_mbuf’\.
 
 2. **Write a DPDK application to construct and send UDP packets**
 
-   **配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装！**
+   ~~**配置Virtual NIC之前一定要先确保ifconfig可用，配置完成后会断网没法下载安装！**~~降级后无此问题
 
    具体代码参见main\.c文件，发包的内容为“Hello,Wireshark!”。
 
