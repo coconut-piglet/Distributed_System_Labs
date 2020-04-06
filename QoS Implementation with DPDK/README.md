@@ -24,14 +24,14 @@ meter使用单速率三颜色标记\(srTCM\)，工作在色盲模式下，关于
 | app\_configure\_flow\_table\(\) | qos\_meter\_init\(\) |
 | app\_pkt\_handle\(\)            | qos\_meter\_run\(\)  |
 
-* **关于Point 1：**看了官方文档中函数rte\_meter\_srtcm\_color\_blind\_check的定义注意到time指的是以cpu cycles为单位的当前cpu time stamp，传进来的time是ns为单位，需要做ns到cpu cycles的转换
+* **关于Point 1**：看了官方文档中函数rte\_meter\_srtcm\_color\_blind\_check的定义注意到time指的是以cpu cycles为单位的当前cpu time stamp，传进来的time是ns为单位，需要做ns到cpu cycles的转换
 
   ```c++
   uint64_t tsc_frequency = rte_get_tsc_hz();
   uint64_t cpu_time_stamp_offset = time * tsc_frequency / 1000000000;
   ```
 
-* **关于Point 2：**从函数定义和qos\_meter里的实现来看逻辑上这个time不应该作为参数传入，就应该去取当前的cpu time stamp，但实验中却是从main里传了一个从0开始每次循环增加1毫秒的变量进来，然后又提示说不应该从0开始计时，所以猜测应该是想模拟出两次调用间隔1毫秒的场景，传进来的time只是偏移量，于是在初始化的时候为每个流单独记录了初始化时的cpu time stamp作为基本量。
+* **关于Point 2**：从函数定义和qos\_meter里的实现来看逻辑上这个time不应该作为参数传入，就应该去取当前的cpu time stamp，但实验中却是从main里传了一个从0开始每次循环增加1毫秒的变量进来，然后又提示说不应该从0开始计时，所以猜测应该是想模拟出两次调用间隔1毫秒的场景，传进来的time只是偏移量，于是在初始化的时候为每个流单独记录了初始化时的cpu time stamp作为基本量。
 
   ```c++
   uint64_t cpu_time_stamp_reference[APP_FLOWS_MAX];

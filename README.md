@@ -382,4 +382,4 @@ Q4: Describe the data structure of ‘rte\_mbuf’\.
 
    用Wireshark捕获到包的内容如下：
 
-   ![wireshark](DPDK/wireshark.png)
+   ![wireshark](Send%20and%20receive%20packets%20with%20DPDK/wireshark.png)
