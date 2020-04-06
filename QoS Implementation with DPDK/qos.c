@@ -1,5 +1,24 @@
 #include "qos.h"
 
+/* copy headers from qos_meter/main.c */
+#include <rte_common.h>
+#include <rte_eal.h>
+#include <rte_malloc.h>
+#include <rte_mempool.h>
+#include <rte_ethdev.h>
+#include <rte_cycles.h>
+#include <rte_mbuf.h>
+#include <rte_meter.h>
+
+/* define PARAMS, use default value from qos_meter for now */
+struct rte_meter_srtcm_params app_srtcm_params[] = {
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048},
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048},
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048},
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}};
+
+/* define FLOW_METER */
+struct rte_meter_srtcm app_flows[APP_FLOWS_MAX];
 
 /**
  * This function will be called only once at the beginning of the test. 
@@ -17,9 +36,18 @@
  * static inline uint64_t rte_get_tsc_cycles(void)
  * @return: The time base for this lcore.
  */
-int
-qos_meter_init(void)
+int qos_meter_init(void) /* ported from app_configure_flow_table() */
 {
+    uint32_t i, j;
+    int ret;
+
+    for (i = 0, j = 0; i < APP_FLOWS_MAX;
+         i++, j = (j + 1) % RTE_DIM(app_srtcm_params))
+    {
+        ret = rte_meter_srtcm_config(&app_flows[i], &app_srtcm_params[j]);
+        if (ret)
+            return ret;
+    }
 
     return 0;
 }
@@ -42,13 +70,16 @@ qos_meter_init(void)
  * enum qos_color { GREEN = 0, YELLOW, RED };
  * enum rte_meter_color { e_RTE_METER_GREEN = 0, e_RTE_METER_YELLOW,  
 	e_RTE_METER_RED, e_RTE_METER_COLORS };
- */ 
+ */
 enum qos_color
-qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time)
+qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from app_pkt_handle() */
 {
-    return 0;
+    uint8_t output_color;                                     // since we use blind mode, input_color is ignored
+    uint64_t tsc_frequency = rte_get_tsc_hz();                // get ??? circles per second
+    uint64_t cpu_circles = time * tsc_frequency / 1000000000; // compute circles
+    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flows[flow_id], cpu_circles, pkt_len);
+    return output_color;
 }
-
 
 /**
  * This function will be called only once at the beginning of the test. 
@@ -61,10 +92,9 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time)
    const uint16_t min_th, const uint16_t max_th, const uint16_t maxp_inv);
  * @return Operation status, 0 success 
  */
-int
-qos_dropper_init(void)
+int qos_dropper_init(void)
 {
-     
+
     return 0;
 }
 
@@ -86,8 +116,7 @@ qos_dropper_init(void)
  * @retval 1 drop the packet based on max threshold criteria
  * @retval 2 drop the packet based on mark probability criteria
  */
-int
-qos_dropper_run(uint32_t flow_id, enum qos_color color, uint64_t time)
+int qos_dropper_run(uint32_t flow_id, enum qos_color color, uint64_t time)
 {
     return 0;
 }
