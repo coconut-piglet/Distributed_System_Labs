@@ -20,6 +20,9 @@ struct rte_meter_srtcm_params app_srtcm_params[] = {
 /* define FLOW_METER */
 struct rte_meter_srtcm app_flows[APP_FLOWS_MAX];
 
+/* define CPU_TIME_STAMP_REFERENCE */
+uint64_t cpu_time_stamp_reference[APP_FLOWS_MAX];
+
 /**
  * This function will be called only once at the beginning of the test. 
  * You can initialize your meter here.
@@ -44,6 +47,7 @@ int qos_meter_init(void) /* ported from app_configure_flow_table() */
     for (i = 0, j = 0; i < APP_FLOWS_MAX;
          i++, j = (j + 1) % RTE_DIM(app_srtcm_params))
     {
+        cpu_time_stamp_reference[i] = rte_rdtsc(); // record cpu time stamp during initialization as a reference
         ret = rte_meter_srtcm_config(&app_flows[i], &app_srtcm_params[j]);
         if (ret)
             return ret;
@@ -61,7 +65,7 @@ int qos_meter_init(void) /* ported from app_configure_flow_table() */
  * 
  * The pkt_len is in bytes, the time is in nanoseconds.
  * 
- * Point: We need to convert ns to cpu circles
+ * Point: We need to convert ns to cpu cycles
  * Point: Time is not counted from 0
  * 
  * static inline enum rte_meter_color rte_meter_srtcm_color_blind_check(struct rte_meter_srtcm *m,
@@ -74,10 +78,10 @@ int qos_meter_init(void) /* ported from app_configure_flow_table() */
 enum qos_color
 qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from app_pkt_handle() */
 {
-    uint8_t output_color;                                     // since we use blind mode, input_color is ignored
-    uint64_t tsc_frequency = rte_get_tsc_hz();                // get ??? circles per second
-    uint64_t cpu_circles = time * tsc_frequency / 1000000000; // compute circles
-    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flows[flow_id], cpu_circles, pkt_len);
+    uint8_t output_color;                                               // since we use blind mode, input_color is ignored
+    uint64_t tsc_frequency = rte_get_tsc_hz();                          // get ??? cycles per second
+    uint64_t cpu_time_stamp_offset = time * tsc_frequency / 1000000000; // compute cpu time stamp offset in cycles
+    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flows[flow_id], cpu_time_stamp_reference[flow_id] + cpu_time_stamp_offset, pkt_len);
     return output_color;
 }
 
