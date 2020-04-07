@@ -89,8 +89,29 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from 
     return output_color;
 }
 
-/* define PARAMS, use random value from for now */
-struct rte_red_params app_red_params[APP_FLOWS_MAX][e_RTE_METER_COLORS];
+/* define PARAMS, use random picked value from for now */
+struct rte_red_params app_red_params[APP_FLOWS_MAX][e_RTE_METER_COLORS] = {
+    {
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
+    },                                                                  // red pararms of the colors above of flow 0
+    {
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
+    },                                                                  // red pararms of the colors above of flow 1
+    {
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
+    },                                                                  // red pararms of the colors above of flow 2
+    {
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
+        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
+    }                                                                   // red pararms of the colors above of flow 3
+};
 
 /* define red run-time data */
 struct rte_red app_red[APP_FLOWS_MAX][e_RTE_METER_COLORS];
@@ -111,7 +132,25 @@ struct rte_red_config app_red_config[APP_FLOWS_MAX][e_RTE_METER_COLORS];
  */
 int qos_dropper_init(void)
 {
+    uint32_t i, j;
+    int ret;
 
+    for (i = 0; i < APP_FLOWS_MAX; i++)
+    {
+        for (j = 0; j < e_RTE_METER_COLORS; j++)
+        {
+            ret = rte_red_rt_data_init(&app_red[i][j]);
+            if (ret)
+                return ret;
+            ret = rte_red_config_init(&app_red_config[i][j],
+                                      app_red_params[i][j].wq_log2,
+                                      app_red_params[i][j].min_th,
+                                      app_red_params[i][j].max_th,
+                                      app_red_params[i][j].maxp_inv);
+            if (ret)
+                return ret;
+        }
+    }
     return 0;
 }
 
