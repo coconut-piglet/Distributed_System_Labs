@@ -10,15 +10,19 @@
 #include <rte_mbuf.h>
 #include <rte_meter.h>
 
+/* add header for WRED support */
+#include <rte_red.h>
+
 /* define PARAMS, use default value from qos_meter for now */
-struct rte_meter_srtcm_params app_srtcm_params[] = {
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048},
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048},
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048},
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}};
+struct rte_meter_srtcm_params app_srtcm_params[APP_FLOWS_MAX] = {
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}, // flow 0
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}, // flow 1
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}, // flow 2
+    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}  // flow 3
+};
 
 /* define FLOW_METER */
-struct rte_meter_srtcm app_flows[APP_FLOWS_MAX];
+struct rte_meter_srtcm app_flow[APP_FLOWS_MAX];
 
 /* define CPU_TIME_STAMP_REFERENCE */
 uint64_t cpu_time_stamp_reference[APP_FLOWS_MAX];
@@ -48,7 +52,7 @@ int qos_meter_init(void) /* ported from app_configure_flow_table() */
          i++, j = (j + 1) % RTE_DIM(app_srtcm_params))
     {
         cpu_time_stamp_reference[i] = rte_rdtsc(); // record cpu time stamp during initialization as a reference
-        ret = rte_meter_srtcm_config(&app_flows[i], &app_srtcm_params[j]);
+        ret = rte_meter_srtcm_config(&app_flow[i], &app_srtcm_params[j]);
         if (ret)
             return ret;
     }
@@ -81,9 +85,18 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from 
     uint8_t output_color;                                               // since we use blind mode, input_color is ignored
     uint64_t tsc_frequency = rte_get_tsc_hz();                          // get ??? cycles per second
     uint64_t cpu_time_stamp_offset = time * tsc_frequency / 1000000000; // compute cpu time stamp offset in cycles
-    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flows[flow_id], cpu_time_stamp_reference[flow_id] + cpu_time_stamp_offset, pkt_len);
+    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flow[flow_id], cpu_time_stamp_reference[flow_id] + cpu_time_stamp_offset, pkt_len);
     return output_color;
 }
+
+/* define PARAMS, use random value from for now */
+struct rte_red_params app_red_params[APP_FLOWS_MAX][e_RTE_METER_COLORS];
+
+/* define red run-time data */
+struct rte_red app_red[APP_FLOWS_MAX][e_RTE_METER_COLORS];
+
+/* define red configs */
+struct rte_red_config app_red_config[APP_FLOWS_MAX][e_RTE_METER_COLORS];
 
 /**
  * This function will be called only once at the beginning of the test. 
