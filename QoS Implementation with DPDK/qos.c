@@ -89,7 +89,7 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from 
     return output_color;
 }
 
-/* define PARAMS, use random picked value from for now */
+/* define PARAMS, use random picked value for now */
 struct rte_red_params app_red_params[APP_FLOWS_MAX][e_RTE_METER_COLORS] = {
     {
         {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
@@ -119,6 +119,9 @@ struct rte_red app_red[APP_FLOWS_MAX][e_RTE_METER_COLORS];
 /* define red configs */
 struct rte_red_config app_red_config[APP_FLOWS_MAX][e_RTE_METER_COLORS];
 
+/* define queue size */
+unsigned queue_size[APP_FLOWS_MAX];
+
 /**
  * This function will be called only once at the beginning of the test. 
  * You can initialize you dropper here
@@ -137,6 +140,7 @@ int qos_dropper_init(void)
 
     for (i = 0; i < APP_FLOWS_MAX; i++)
     {
+        queue_size[i] = 0; // queue size start from 0
         for (j = 0; j < e_RTE_METER_COLORS; j++)
         {
             ret = rte_red_rt_data_init(&app_red[i][j]);
