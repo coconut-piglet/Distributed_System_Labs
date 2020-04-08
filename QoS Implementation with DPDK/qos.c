@@ -54,7 +54,10 @@ int qos_meter_init(void) /* ported from app_configure_flow_table() */
         cpu_time_stamp_reference[i] = rte_rdtsc(); // record cpu time stamp during initialization as a reference
         ret = rte_meter_srtcm_config(&app_flow[i], &app_srtcm_params[j]);
         if (ret)
+        {
+            printf("QOS_METER: Initialization failed");
             return ret;
+        }
     }
 
     return 0;
@@ -92,25 +95,25 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from 
 /* define PARAMS, use random picked value for now */
 struct rte_red_params app_red_params[APP_FLOWS_MAX][e_RTE_METER_COLORS] = {
     {
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
-    },                                                                  // red pararms of the colors above of flow 0
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
+    },                                                                // red pararms of the colors above of flow 0
     {
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
-    },                                                                  // red pararms of the colors above of flow 1
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
+    },                                                                // red pararms of the colors above of flow 1
     {
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
-    },                                                                  // red pararms of the colors above of flow 2
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
+    },                                                                // red pararms of the colors above of flow 2
     {
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // green
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}, // yellow
-        {.wq_log2 = 2, .min_th = 512, .max_th = 1024, .maxp_inv = 256}  // red
-    }                                                                   // red pararms of the colors above of flow 3
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
+    }                                                                 // red pararms of the colors above of flow 3
 };
 
 /* define red run-time data */
@@ -152,9 +155,13 @@ int qos_dropper_init(void)
                                       app_red_params[i][j].max_th,
                                       app_red_params[i][j].maxp_inv);
             if (ret)
+            {
+                printf("QOS_DROPPER: Initialization failed");
                 return ret;
+            }
         }
     }
+
     return 0;
 }
 
