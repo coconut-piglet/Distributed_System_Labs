@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "qos.h"
 
 /* copy headers from qos_meter/main.c */
@@ -88,7 +89,9 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from 
     uint8_t output_color;                                               // since we use blind mode, input_color is ignored
     uint64_t tsc_frequency = rte_get_tsc_hz();                          // get ??? cycles per second
     uint64_t cpu_time_stamp_offset = time * tsc_frequency / 1000000000; // compute cpu time stamp offset in cycles
-    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flow[flow_id], cpu_time_stamp_reference[flow_id] + cpu_time_stamp_offset, pkt_len);
+    output_color = (uint8_t)rte_meter_srtcm_color_blind_check(&app_flow[flow_id],
+                                                              cpu_time_stamp_reference[flow_id] + cpu_time_stamp_offset,
+                                                              pkt_len);
     return output_color;
 }
 
@@ -185,5 +188,15 @@ int qos_dropper_init(void)
  */
 int qos_dropper_run(uint32_t flow_id, enum qos_color color, uint64_t time)
 {
-    return 0;
+    printf("current q_time: %lu\n", app_red[flow_id][color].q_time);
+    int ret;
+    uint64_t tsc_frequency = rte_get_tsc_hz();                          // get ??? cycles per second
+    uint64_t cpu_time_stamp_offset = time * tsc_frequency / 1000000000; // compute cpu time stamp offset in cycles
+    ret = rte_red_enqueue(&app_red_config[flow_id][color],
+                          &app_red[flow_id][color],
+                          queue_size[flow_id],
+                          cpu_time_stamp_reference[flow_id] + cpu_time_stamp_offset);
+    if (ret == 0)
+        queue_size[flow_id]++;
+    return ret;
 }

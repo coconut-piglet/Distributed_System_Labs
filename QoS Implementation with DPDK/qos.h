@@ -1,8 +1,6 @@
 #ifndef __QOS_H__
 #define __QOS_H__
 
-#include <stdint.h>
-
 #define APP_FLOWS_MAX 4
 
 /**
