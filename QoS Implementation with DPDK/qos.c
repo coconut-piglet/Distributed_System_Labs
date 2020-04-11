@@ -188,7 +188,13 @@ int qos_dropper_init(void)
  */
 int qos_dropper_run(uint32_t flow_id, enum qos_color color, uint64_t time)
 {
-    printf("current q_time: %lu\n", app_red[flow_id][color].q_time);
+    if (time - app_red[flow_id][color].q_time > 1000)
+    {
+        rte_red_mark_queue_empty(&app_red[flow_id][color], time);
+        uint32_t i;
+        for (i = 0; i < APP_FLOWS_MAX; i++)
+            queue_size[i] = 0;
+    }
     int ret;
     uint64_t tsc_frequency = rte_get_tsc_hz();                          // get ??? cycles per second
     uint64_t cpu_time_stamp_offset = time * tsc_frequency / 1000000000; // compute cpu time stamp offset in cycles
