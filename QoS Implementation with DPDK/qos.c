@@ -16,10 +16,10 @@
 
 /* define PARAMS, use default value from qos_meter for now */
 struct rte_meter_srtcm_params app_srtcm_params[APP_FLOWS_MAX] = {
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}, // flow 0
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}, // flow 1
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}, // flow 2
-    {.cir = 1000000 * 46, .cbs = 2048, .ebs = 2048}  // flow 3
+    {.cir = 160000000, .cbs = 640000, .ebs = 1280000}, // flow 0
+    {.cir = 80000000, .cbs = 70000, .ebs = 360000},    // flow 1
+    {.cir = 40000000, .cbs = 32000, .ebs = 200000},    // flow 2
+    {.cir = 20000000, .cbs = 16000, .ebs = 160000}     // flow 3
 };
 
 /* define FLOW_METER */
