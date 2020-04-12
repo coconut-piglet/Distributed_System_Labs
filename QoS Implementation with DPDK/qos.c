@@ -16,10 +16,10 @@
 
 /* define PARAMS, use default value from qos_meter for now */
 struct rte_meter_srtcm_params app_srtcm_params[APP_FLOWS_MAX] = {
-    {.cir = 160000000, .cbs = 640000, .ebs = 1280000}, // flow 0
-    {.cir = 80000000, .cbs = 70000, .ebs = 360000},    // flow 1
-    {.cir = 40000000, .cbs = 32000, .ebs = 200000},    // flow 2
-    {.cir = 20000000, .cbs = 16000, .ebs = 160000}     // flow 3
+    {.cir = 160000000, .cbs = 640000, .ebs = 640000}, // flow 0
+    {.cir = 80000000, .cbs = 80000, .ebs = 160000},   // flow 1
+    {.cir = 40000000, .cbs = 40000, .ebs = 80000},    // flow 2
+    {.cir = 20000000, .cbs = 20000, .ebs = 40000}     // flow 3
 };
 
 /* define FLOW_METER */
@@ -98,25 +98,25 @@ qos_meter_run(uint32_t flow_id, uint32_t pkt_len, uint64_t time) /* ported from 
 /* define PARAMS, use random picked value for now */
 struct rte_red_params app_red_params[APP_FLOWS_MAX][e_RTE_METER_COLORS] = {
     {
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
-    },                                                                // red pararms of the colors above of flow 0
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 128}, // green
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 128}, // yellow
+        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 128}  // red
+    },                                                                 // red pararms of the colors above of flow 0
     {
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
-    },                                                                // red pararms of the colors above of flow 1
+        {.wq_log2 = 4, .min_th = 32, .max_th = 128, .maxp_inv = 32}, // green
+        {.wq_log2 = 4, .min_th = 1, .max_th = 2, .maxp_inv = 1},     // yellow
+        {.wq_log2 = 4, .min_th = 0, .max_th = 1, .maxp_inv = 1}      // red
+    },                                                               // red pararms of the colors above of flow 1
     {
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
-    },                                                                // red pararms of the colors above of flow 2
+        {.wq_log2 = 2, .min_th = 16, .max_th = 64, .maxp_inv = 16}, // green
+        {.wq_log2 = 2, .min_th = 1, .max_th = 2, .maxp_inv = 1},    // yellow
+        {.wq_log2 = 2, .min_th = 0, .max_th = 1, .maxp_inv = 1}     // red
+    },                                                              // red pararms of the colors above of flow 2
     {
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // green
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}, // yellow
-        {.wq_log2 = 8, .min_th = 256, .max_th = 512, .maxp_inv = 16}  // red
-    }                                                                 // red pararms of the colors above of flow 3
+        {.wq_log2 = 1, .min_th = 8, .max_th = 32, .maxp_inv = 8}, // green
+        {.wq_log2 = 1, .min_th = 1, .max_th = 2, .maxp_inv = 1},  // yellow
+        {.wq_log2 = 1, .min_th = 0, .max_th = 1, .maxp_inv = 1}   // red
+    }                                                             // red pararms of the colors above of flow 3
 };
 
 /* define red run-time data */
@@ -159,7 +159,7 @@ int qos_dropper_init(void)
                                       app_red_params[i][j].maxp_inv);
             if (ret)
             {
-                printf("QOS_DROPPER: Initialization failed");
+                printf("QOS_DROPPER: Initialization failed\n");
                 return ret;
             }
         }

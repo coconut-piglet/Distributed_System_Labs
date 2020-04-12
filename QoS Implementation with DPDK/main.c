@@ -23,10 +23,12 @@ int main(int argc, char **argv)
     int cnt_send[APP_FLOWS_MAX];
     int cnt_pass[APP_FLOWS_MAX];
     int cnt_color[APP_FLOWS_MAX][3];
+    int cnt_color_pass[APP_FLOWS_MAX][3];
     for (i = 0; i < APP_FLOWS_MAX; i++)
     {
         cnt_send[i] = cnt_pass[i] = 0;
         cnt_color[i][0] = cnt_color[i][1] = cnt_color[i][2] = 0;
+        cnt_color_pass[i][0] = cnt_color_pass[i][1] = cnt_color_pass[i][2] = 0;
     }
 
     for (i = 0; i < 10; i++)
@@ -50,14 +52,26 @@ int main(int argc, char **argv)
             cnt_send[flow_id] += pkt_len;
             cnt_pass[flow_id] += pass ? 0 : pkt_len;
             cnt_color[flow_id][color] += pkt_len;
+            cnt_color_pass[flow_id][color] += pass ? 0 : pkt_len;
         }
         time += 1000000;
     }
 
     for (i = 0; i < APP_FLOWS_MAX; i++)
     {
+        printf("fid: %d, green: %d of %d, yellow: %d of %d red: %d of %d\n",
+               i,
+               cnt_color_pass[i][0],
+               cnt_color[i][0],
+               cnt_color_pass[i][1],
+               cnt_color[i][1],
+               cnt_color_pass[i][2],
+               cnt_color[i][2]);
+    }
+
+    for (i = 0; i < APP_FLOWS_MAX; i++)
+    {
         printf("fid: %d, send: %d, pass: %d\n", i, cnt_send[i], cnt_pass[i]);
-        printf("fid: %d, green: %d, yellow: %d red: %d\n", i, cnt_color[i][0], cnt_color[i][1], cnt_color[i][2]);
     }
 
     return 0;
