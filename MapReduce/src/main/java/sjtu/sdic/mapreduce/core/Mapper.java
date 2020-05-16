@@ -4,8 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import sjtu.sdic.mapreduce.common.KeyValue;
 import sjtu.sdic.mapreduce.common.Utils;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -65,7 +64,34 @@ public class Mapper {
      * @param mapF the user-defined map function
      */
     public static void doMap(String jobName, int mapTask, String inFile, int nReduce, MapFunc mapF) {
-       
+        File file = new File(inFile);
+        InputStream inputStream = null;
+        try {
+            /* read data from input file */
+            inputStream = new FileInputStream(file);
+            int length = inputStream.available();
+            byte[] data = new byte[length];
+            inputStream.read(data);
+
+            /* to be continued */
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.out.println("[error] inFile does not exist");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("[error] failed to read inFile");
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.out.println("[error] failed to close inFile");
+                }
+            } else {
+                System.out.println("[info] doMap failed");
+            }
+        }
     }
 
     /**
