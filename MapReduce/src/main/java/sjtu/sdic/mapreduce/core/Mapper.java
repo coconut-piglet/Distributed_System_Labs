@@ -83,7 +83,12 @@ public class Mapper {
             /* 1 file with nTotal key/value pairs --> nReduce files, each with nTotal/nReduce key/value pairs */
 
             /* due to the use of hashCode, it's hard to create singie keyValuesDst during iteration, prepare it beforehead */
-            List<List<KeyValue>> keyValuesDsts = new ArrayList<>(nReduce);
+            List<List<KeyValue>> keyValuesDsts = new ArrayList<>();
+
+            /* init keyValuesDsts */
+            /* new ArrayList<>(nReduce) doesn't work */
+            for (int i = 0; i < nReduce; i++) keyValuesDsts.add(new ArrayList<>());
+
             for (KeyValue keyValue : keyValuesSrc) {
                 /* hash code each key, mod nReduce, to pick target for a key/value pair */
                 int target = Mapper.hashCode(keyValue.key) % nReduce;
