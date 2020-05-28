@@ -1,5 +1,6 @@
 package sjtu.sdic.mapreduce.core;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import sjtu.sdic.mapreduce.common.KeyValue;
 import sjtu.sdic.mapreduce.common.Utils;
@@ -73,7 +74,45 @@ public class Mapper {
             byte[] data = new byte[length];
             inputStream.read(data);
 
-            /* to be continued */
+            /* perform map function provided on input file and its contents */
+            /* def: List<KeyValue> map(String file, String contents); */
+            String inContents = new String(data);
+            List<KeyValue> keyValuesSrc = mapF.map(inFile, inContents);
+
+            /* partition mapF's output into nReduce intermediate files */
+            /* 1 file with nTotal key/value pairs --> nReduce files, each with nTotal/nReduce key/value pairs */
+
+            /* due to the use of hashCode, it's hard to create singie keyValuesDst during iteration, prepare it beforehead */
+            List<List<KeyValue>> keyValuesDsts = new ArrayList<>(nReduce);
+            for (KeyValue keyValue : keyValuesSrc) {
+                /* hash code each key, mod nReduce, to pick target for a key/value pair */
+                int target = Mapper.hashCode(keyValue.key) % nReduce;
+                keyValuesDsts.get(target).add(keyValue);
+            }
+
+            /* write prepared key/value pairs to nReduce files */
+            for (int i = 0; i < nReduce; i++) {
+                OutputStream outputStream = null;
+                try {
+                    outputStream = new FileOutputStream(Utils.reduceName(jobName, mapTask, i));
+                    byte[] outContents = JSON.toJSONString(keyValuesDsts.get(i)).getBytes();
+                    outputStream.write(outContents);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.out.println("[error] failed to write interFile");
+                } finally {
+                    if (outputStream != null) {
+                        try {
+                            outputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            System.out.println("[error] failed to close interFile");
+                        }
+                    } else {
+                        System.out.println("[info] doMap failed");
+                    }
+                }
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             System.out.println("[error] inFile does not exist");
