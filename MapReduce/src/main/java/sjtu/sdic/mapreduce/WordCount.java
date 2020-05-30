@@ -17,13 +17,33 @@ import java.util.regex.Pattern;
 public class WordCount {
 
     public static List<KeyValue> mapFunc(String file, String value) {
-        // Your code here (Part II)
-       return null;
+        List<KeyValue> keyValuesRet = new ArrayList<>();
+
+        /* use pattern and matcher to extract words */
+        Pattern pattern = Pattern.compile("[a-zA-Z0-9]+");
+        Matcher matcher = pattern.matcher(value);
+
+        /* put words into key/value pairs, each with its appearance set to 1 */
+        /* Matcher.find() tells whether next word exists (matches the regex) */
+        while (matcher.find()) {
+            /* after Matcher.find(), Matcher.group() returns that word */
+            String key = matcher.group();
+            keyValuesRet.add(new KeyValue(key, "1"));
+        }
+
+        return keyValuesRet;
     }
 
     public static String reduceFunc(String key, String[] values) {
-        // Your code here (Part II)
-        return null;
+        Integer retVal = 0;
+
+        /* add all appearances together */
+        for (String value : values) {
+            retVal += Integer.valueOf(value);
+        }
+
+        String retStr = retVal.toString();
+        return retStr;
     }
 
     public static void main(String[] args) {
