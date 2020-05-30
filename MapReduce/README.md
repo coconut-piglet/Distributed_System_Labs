@@ -19,4 +19,13 @@
 
 ## Part II: Single-worker word count
 
+* mapFunc
+  * 使用Pattern和Matcher取下文章中的word作为key，value设为1，表示又出现了1次
+  * 返回生成的键值对组
+* reduceFunc
+  * 对单个word的出现次数进行累加
+  * 返回总和
+
+## Part III: Distributing MapReduce tasks
+
 施工中
