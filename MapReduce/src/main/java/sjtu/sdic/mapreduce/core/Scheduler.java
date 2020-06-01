@@ -54,6 +54,26 @@ public class Scheduler {
          * Your code here (Part III, Part IV).
          */
 
+        /* init countDownLatch and threads for communicating with workers */
+        CountDownLatch countDownLatch = new CountDownLatch(nTasks);
+        List<Thread> workers = new ArrayList<>();
+
+        /* init each thread and start them simultaneously */
+        for (int i = 0; i < nTasks; i++) {
+            Thread worker = new Thread() {
+                /* TODO: figure out what should each thread do */
+            };
+            workers.add(worker);
+        }
+        workers.forEach(Thread::start);
+
+        /* and wait here until all threads finish their job */
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         System.out.println(String.format("Schedule: %s done", phase));
     }
 }
