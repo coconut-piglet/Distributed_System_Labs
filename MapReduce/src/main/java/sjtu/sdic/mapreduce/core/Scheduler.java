@@ -60,8 +60,32 @@ public class Scheduler {
 
         /* init each thread and start them simultaneously */
         for (int i = 0; i < nTasks; i++) {
+            /* init values required by current thread */
+            final int fileNum = i;
+            final int taskNum = i;
+            final int otherPhaseNum = nOther;
             Thread worker = new Thread() {
-                /* TODO: figure out what should each thread do */
+                public void run() {
+                    boolean jobDone = false;
+                    while (!jobDone) {
+                        try {
+                            /* try read the worker's RPC address */
+                            String RPCaddress = registerChan.read();
+                            DoTaskArgs arg = new DoTaskArgs(jobName, mapFiles[fileNum], phase, taskNum, otherPhaseNum);
+                            Call.getWorkerRpcService(RPCaddress).doTask(arg);
+                            /* there are more tasks than workers, workers must be reused */
+                            registerChan.write(RPCaddress);
+                            jobDone = true;
+                        } catch (InterruptedException e) {
+                            /* in case some workers start running after schedule */
+                            /* which will cause registerChan being empty when read */
+                            /* read() will block and throw an InterruptedException */
+                            /* just do nothing and continue looping */
+                        }
+                    }
+                    /* decrease count after finish doing everything and return */
+                    countDownLatch.countDown();
+                }
             };
             workers.add(worker);
         }
