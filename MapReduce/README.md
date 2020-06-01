@@ -28,4 +28,14 @@
 
 ## Part III: Distributing MapReduce tasks
 
-施工中
+* schedule
+  * 初始化CountDownLatch，计数器需计数nTasks次
+  * 初始化nTasks个线程
+    * 在循环体内读registerChan
+    * registerChan内部实现采用了BlockingQueue，不需要自己折腾锁什么的
+    * 当有workers起得比schedule晚时registerChan会读着读着就空了，再去读就会抛异常，异常不需要做任何处理接着循环回去读即可
+    * 读到RPC地址后就照着文档提示的流程准备参数，调RPC做任务等返回
+    * 由于task比worker多，而read操作用到了take，worker会从registerChan中被移除，为了复用数量不够的worker需要把它write回去
+    * 此时跳出循环，工作完成，执行countDown后返回
+  * 启动nTasks个线程后await等待它们完成工作，最后结束调度任务
+  * 疑问：目前没有用到interrupt，但是暂时没有想到用例，或许和后面的部分有关？
