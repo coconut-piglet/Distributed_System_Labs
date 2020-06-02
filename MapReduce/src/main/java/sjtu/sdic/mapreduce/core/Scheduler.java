@@ -1,5 +1,6 @@
 package sjtu.sdic.mapreduce.core;
 
+import com.alipay.sofa.rpc.core.exception.SofaRpcException;
 import sjtu.sdic.mapreduce.common.Channel;
 import sjtu.sdic.mapreduce.common.DoTaskArgs;
 import sjtu.sdic.mapreduce.common.JobPhase;
@@ -72,7 +73,16 @@ public class Scheduler {
                             /* try read the worker's RPC address */
                             String RPCaddress = registerChan.read();
                             DoTaskArgs arg = new DoTaskArgs(jobName, mapFiles[fileNum], phase, taskNum, otherPhaseNum);
-                            Call.getWorkerRpcService(RPCaddress).doTask(arg);
+                            try {
+                                Call.getWorkerRpcService(RPCaddress).doTask(arg);
+                            } catch (SofaRpcException e) {
+                                /* in case current workers fails */
+                                /* should skip reusing current worker and continue to the next loop */
+                                /* thus current worker is completely removed from registerChan */
+                                /* and no other thread will be assigned this worker until it recovers and restarts */
+                                /* thus in the next loop, current thread will be assigned a new worker */
+                                continue;
+                            }
                             /* there are more tasks than workers, workers must be reused */
                             registerChan.write(RPCaddress);
                             jobDone = true;
