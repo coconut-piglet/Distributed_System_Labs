@@ -16,13 +16,48 @@ import java.util.regex.Pattern;
 public class InvertedIndex {
 
     public static List<KeyValue> mapFunc(String file, String value) {
-        // Your code here (Part V)
-        return null;
+        List<KeyValue> keyValuesRet = new ArrayList<>();
+
+        /* use pattern and matcher to extract words */
+        Pattern pattern = Pattern.compile("[a-zA-Z0-9]+");
+        Matcher matcher = pattern.matcher(value);
+
+        /* put words into key/value pairs, each with its value set to the file name */
+        /* Matcher.find() tells whether next word exists (matches the regex) */
+        while (matcher.find()) {
+            /* after Matcher.find(), Matcher.group() returns that word */
+            String key = matcher.group();
+            keyValuesRet.add(new KeyValue(key, file));
+        }
+
+        return keyValuesRet;
     }
 
     public static String reduceFunc(String key, String[] values) {
-        //  Your code here (Part V)
-        return null;
+        String retStr = "";
+
+        /* notice that a word can appear multiple times in a single file */
+        /* thus should use Set to prevent duplicates in output */
+        Set<String> distinctFiles = new HashSet<>();
+
+        /* create distinctFiles list and append fTotal to retStr */
+        for (String file : values) {
+            distinctFiles.add(file);
+        }
+        Integer fTotal = distinctFiles.size();
+        retStr += fTotal.toString();
+        retStr += " ";
+
+        /* append files in distinctFiles to retStr */
+        for (String file : distinctFiles) {
+            retStr += file;
+            retStr += ",";
+        }
+
+        /* remove the extra ',' */
+        retStr = retStr.substring(0, retStr.length() - 1);
+
+        return retStr;
     }
 
     public static void main(String[] args) {
