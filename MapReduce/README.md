@@ -51,3 +51,15 @@
     * 于是保证了在之后的循环会获得一个别的worker来做当前的task
 * 疑问：至今没有用到interrupt，或许还有别的用到它的实现方式？
 
+## Part V: Inverted index generation
+
+* mapFunc
+  * 和WordCount几乎无差，value修改为所属文件名
+* reduceFunc
+  * 收到的key和values分别是word和所有出现过它的文件
+  * 由于个word可以在一个file中多次出现，因此values中可能存在大量重复的file
+  * 使用Set来自动去除重复的file，把values全部add进Set里得到不重复的file集合
+  * 集合的大小即为出现该word的总文件数
+  * 最后将Set里的file逐个添加到retStr末即可
+  * 注意：word本身不需要被加到retStr中，reduce也确实没必要做这个没意义的事情
+
