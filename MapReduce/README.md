@@ -39,3 +39,15 @@
     * 此时跳出循环，工作完成，执行countDown后返回
   * 启动nTasks个线程后await等待它们完成工作，最后结束调度任务
   * 疑问：目前没有用到interrupt，但是暂时没有想到用例，或许和后面的部分有关？
+
+## Part IV: Handling worker failures
+
+* schedule
+  * 文档说如果worker出错call最终会返回false，然而并没有
+  * 裸跑测试发现当worker出错时会抛出SofaRpcException，所以给call补上try catch
+  * 捕获到SofaRpcException表示当前worker出错了，应直接continue到下一次循环
+    * 因为跳过了write，所以故障worker不会再回到registerChan中
+    * 这样保证了故障worker不会再被分配做别的task，直到它重启恢复后再把自己加回registerChan
+    * 于是保证了在之后的循环会获得一个别的worker来做当前的task
+* 疑问：至今没有用到interrupt，或许还有别的用到它的实现方式？
+
