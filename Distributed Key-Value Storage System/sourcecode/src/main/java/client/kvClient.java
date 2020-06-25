@@ -3,12 +3,9 @@ package client;
 import common.KeyValuePair;
 import common.Message;
 import server.master.api.kvPut;
+import server.master.api.kvUpdate;
 
-import java.nio.charset.MalformedInputException;
-import java.rmi.AccessException;
 import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.util.Scanner;
 
 /*
@@ -22,7 +19,7 @@ import java.util.Scanner;
  *   [√] support PUT RPC
  *   [ ] support READ RPC
  *   [ ] support DELETE RPC
- *   [ ] support UPDATE RPC
+ *   [√] support UPDATE RPC
  *   [√] support command PUT
  *   [√] support command READ
  *   [√] support command DELETE
@@ -83,10 +80,11 @@ public class kvClient {
                 /* create new KeyValuePair object */
                 KeyValuePair keyValuePair = new KeyValuePair(key, value);
 
+                Message retMsg;
                 try {
                     /* call PUT via RPC */
-                    kvPut put = (kvPut) Naming.lookup("kvPut");
-                    Message retMsg = put.put(new KeyValuePair("key", "value"));
+                    kvPut putService = (kvPut) Naming.lookup("kvPut");
+                    retMsg = putService.put(keyValuePair);
 
                     /* SUCCESS: a new key/value pair has been stored */
                     if (retMsg.getType().equals("SUCCESS")) {
@@ -103,7 +101,20 @@ public class kvClient {
                         String confirmation = confirm.nextLine().trim();
 
                         if (confirmation.equals("Y")) {
-                            /* PLACEHOLDER for RPC */
+
+                            /* call UPDATE via RPC */
+                            kvUpdate updateService = (kvUpdate) Naming.lookup("kvUpdate");
+                            retMsg = updateService.update(keyValuePair);
+
+                            /* SUCCESS: the value has been updated */
+                            if (retMsg.getType().equals("SUCCESS")) {
+                                printMessage("ok");
+                            }
+                            /* ERROR: something went wrong on the server side */
+                            else {
+                                printMessage(retMsg.getContent());
+                                printMessage("operation failed");
+                            }
                         }
                         else {
                             printMessage("operation abort");

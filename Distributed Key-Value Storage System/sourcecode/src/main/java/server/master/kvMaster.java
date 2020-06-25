@@ -2,6 +2,7 @@ package server.master;
 
 import server.master.implementation.kvPutImpl;
 import server.master.implementation.kvReadImpl;
+import server.master.implementation.kvUpdateImpl;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -47,6 +48,13 @@ public class kvMaster {
             kvPutImpl kvPut = new kvPutImpl();
             Naming.rebind("kvPut", kvPut);
             System.out.println("done");
+
+            /* bind UPDATE service */
+            printMessage("binding UPDATE service...");
+            kvUpdateImpl kvUpdate = new kvUpdateImpl();
+            Naming.rebind("kvUpdate", kvUpdate);
+            System.out.println("done");
+
         } catch (Exception e) {
             System.out.println("failed");
             e.printStackTrace();
