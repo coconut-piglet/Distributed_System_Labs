@@ -1,5 +1,14 @@
 package client;
 
+import common.KeyValuePair;
+import common.Message;
+import server.master.api.kvPut;
+
+import java.nio.charset.MalformedInputException;
+import java.rmi.AccessException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.Scanner;
 
 /*
@@ -10,7 +19,10 @@ import java.util.Scanner;
  *   [√] support command INVALID
  *   [√] support command HELP
  *   [√] support command EXIT
- *   [ ] support RPC
+ *   [√] support PUT RPC
+ *   [ ] support READ RPC
+ *   [ ] support DELETE RPC
+ *   [ ] support UPDATE RPC
  *   [√] support command PUT
  *   [√] support command READ
  *   [√] support command DELETE
@@ -61,15 +73,51 @@ public class kvClient {
                 /* check whether cmd matches put [key] [value] */
                 if (args.length != 3) {
                     printMessage("invalid arguments, see 'help' for usage");
+                    continue;
                 }
 
                 /* parse arguments */
                 String key = args[1];
                 String value = args[2];
 
-                /* PLACEHOLDER for RPC */
+                /* create new KeyValuePair object */
+                KeyValuePair keyValuePair = new KeyValuePair(key, value);
 
-                printMessage("ok");
+                try {
+                    /* call PUT via RPC */
+                    kvPut put = (kvPut) Naming.lookup("kvPut");
+                    Message retMsg = put.put(new KeyValuePair("key", "value"));
+
+                    /* SUCCESS: a new key/value pair has been stored */
+                    if (retMsg.getType().equals("SUCCESS")) {
+                        printMessage("ok");
+                    }
+                    /* WARNING: the key has been stored before */
+                    else if (retMsg.getType().equals("WARNING")) {
+
+                        /* let the user choose whether to overwrite or not */
+                        printMessage("conflict with existing key/value pair");
+                        printMessage("previously stored value '" + retMsg.getContent() + "'");
+                        System.out.print("kvClient: do you want to overwrite it ? (Y/n) ");
+                        Scanner confirm = new Scanner(System.in);
+                        String confirmation = confirm.nextLine().trim();
+
+                        if (confirmation.equals("Y")) {
+                            /* PLACEHOLDER for RPC */
+                        }
+                        else {
+                            printMessage("operation abort");
+                        }
+                    }
+                    /* ERROR: something went wrong on the server side */
+                    else {
+                        printMessage(retMsg.getContent());
+                        printMessage("operation failed");
+                    }
+                } catch (Exception e) {
+                    printMessage("sorry, something went wrong");
+                    e.printStackTrace();
+                }
             }
 
             /* READ operation */
