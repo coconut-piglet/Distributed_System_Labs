@@ -4,6 +4,7 @@ import common.KeyValuePair;
 import common.Message;
 import server.master.api.kvPut;
 import server.master.api.kvUpdate;
+import server.master.api.sysHalt;
 
 import java.rmi.Naming;
 import java.util.Scanner;
@@ -20,9 +21,11 @@ import java.util.Scanner;
  *   [ ] support READ RPC
  *   [ ] support DELETE RPC
  *   [√] support UPDATE RPC
+ *   [√] support SHUTDOWN RPC
  *   [√] support command PUT
  *   [√] support command READ
  *   [√] support command DELETE
+ *   [√] support command SHUTDOWN
  */
 public class kvClient {
     private static void printUsage() {
@@ -137,6 +140,7 @@ public class kvClient {
                 /* check whether cmd matches read [key] */
                 if (args.length != 2) {
                     printMessage("invalid arguments, see 'help' for usage");
+                    continue;
                 }
 
                 /* parse arguments */
@@ -153,6 +157,7 @@ public class kvClient {
                 /* check whether cmd matches delete [key] */
                 if (args.length != 2) {
                     printMessage("invalid arguments, see 'help' for usage");
+                    continue;
                 }
 
                 /* parse arguments */
@@ -165,6 +170,49 @@ public class kvClient {
 
             /* EXIT operatoin */
             else if (args[0].equals("exit")) {
+
+                /* check whether cmd matches exit */
+                if (args.length != 1) {
+                    printMessage("invalid arguments, see 'help' for usage");
+                    continue;
+                }
+
+                /* say goodbye and end looping */
+                printMessage("goodbye");
+                break;
+
+            }
+
+            /* SHUTDOWN operatoin */
+            else if (args[0].equals("shutdown")) {
+
+                /* check whether cmd matches shutdown */
+                if (args.length != 1) {
+                    printMessage("invalid arguments, see 'help' for usage");
+                    continue;
+                }
+
+                Message retMsg;
+                try {
+                    /* call HALT via RPC */
+                    sysHalt haltService = (sysHalt) Naming.lookup("sysHalt");
+                    retMsg = haltService.halt();
+
+                    /* SUCCESS: remote server has received command */
+                    if (retMsg.getType().equals("SUCCESS")) {
+                        printMessage("remote server has been closed");
+                    }
+                    /* ERROR: something went wrong on the server side */
+                    else {
+                        printMessage("operation failed");
+                        continue;
+                    }
+
+                } catch (Exception e) {
+                    printMessage("sorry, something went wrong");
+                    e.printStackTrace();
+                    continue;
+                }
 
                 /* say goodbye and end looping */
                 printMessage("goodbye");

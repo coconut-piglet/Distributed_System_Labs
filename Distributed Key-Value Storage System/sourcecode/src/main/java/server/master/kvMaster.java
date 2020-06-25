@@ -1,13 +1,13 @@
 package server.master;
 
 import server.master.implementation.kvPutImpl;
-import server.master.implementation.kvReadImpl;
 import server.master.implementation.kvUpdateImpl;
+import server.master.implementation.sysHaltImpl;
 
-import java.net.MalformedURLException;
 import java.rmi.Naming;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 /*
  * Master Server of Distributed Key-Value Storage System
@@ -18,6 +18,8 @@ import java.rmi.registry.LocateRegistry;
  *   [ ] add node management
  */
 public class kvMaster {
+
+    private static boolean powerOn;
 
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
@@ -36,11 +38,14 @@ public class kvMaster {
         System.out.println("`8888Y' Y88888P Y8888P'     VP  d8'          YP   YD    YP    `8888Y' Y88888P 88   YD    YP    Y88888P 88   YD ");
         System.out.println("_______________________________________________________________________________________________________________");
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
+
+        powerOn = true;
+
         printMessageln("initializing service");
         try {
             /* start RMI registry on the default port */
             printMessage("launch RMI registry...");
-            LocateRegistry.createRegistry(1099);
+            Registry registry = LocateRegistry.createRegistry(1099);
             System.out.println("done");
 
             /* bind PUT service */
@@ -55,10 +60,60 @@ public class kvMaster {
             Naming.rebind("kvUpdate", kvUpdate);
             System.out.println("done");
 
+            /* bind HALT service */
+            printMessage("binding HALT service...");
+            sysHaltImpl sysHalt = new sysHaltImpl();
+            Naming.rebind("sysHalt", sysHalt);
+            System.out.println("done");
+
+            printMessageln("service initialized");
+
+            while (powerOn) {
+                /* TODO: add node management routine */
+                printMessageln("running routine");
+            }
+
+            printMessageln("shutting down");
+
+            /* unbind PUT service */
+            printMessage("unbinding PUT service...");
+            Naming.unbind("kvPut");
+            System.out.println("done");
+
+            /* unbind UPDATE service */
+            printMessage("unbinding UPDATE service...");
+            Naming.unbind("kvUpdate");
+            System.out.println("done");
+
+            /* unbind HALT service */
+            printMessage("unbinding HALT service...");
+            Naming.unbind("sysHalt");
+            System.out.println("done");
+
+            /* stop RMI registry */
+            printMessage("closing RMI registry...");
+            if (UnicastRemoteObject.unexportObject(registry, true)) {
+                System.out.println("done");
+            }
+            else {
+                System.out.println("failed");
+            }
+
         } catch (Exception e) {
             System.out.println("failed");
             e.printStackTrace();
             return;
         }
+        printMessageln("goodbye");
+        System.exit(0);
+    }
+
+    private static boolean getPowerStat() {
+        return powerOn;
+    }
+
+    public static void shutdown() {
+        printMessageln("received shutdown command");
+        powerOn = false;
     }
 }
