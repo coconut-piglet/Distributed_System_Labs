@@ -11,9 +11,9 @@ import java.util.Scanner;
  *   [√] support command HELP
  *   [√] support command EXIT
  *   [ ] support RPC
- *   [ ] support command PUT
- *   [ ] support command READ
- *   [ ] suppoer command DELETE
+ *   [√] support command PUT
+ *   [√] support command READ
+ *   [√] support command DELETE
  */
 public class kvClient {
     private static void printUsage() {
@@ -42,7 +42,7 @@ public class kvClient {
 
         /* start routine */
         while (true) {
-            System.out.print("kvClient > ");
+            System.out.print("command > ");
             Scanner scanner = new Scanner(System.in);
             String cmd = scanner.nextLine().trim();
             String args[] = cmd.split(" ");
@@ -56,13 +56,53 @@ public class kvClient {
             }
 
             /* PUT operation */
-            else if (args[0].equals("put")) {}
+            else if (args[0].equals("put")) {
+
+                /* check whether cmd matches put [key] [value] */
+                if (args.length != 3) {
+                    printMessage("invalid arguments, see 'help' for usage");
+                }
+
+                /* parse arguments */
+                String key = args[1];
+                String value = args[2];
+
+                /* PLACEHOLDER for RPC */
+
+                printMessage("ok");
+            }
 
             /* READ operation */
-            else if (args[0].equals("read")) {}
+            else if (args[0].equals("read")) {
+
+                /* check whether cmd matches read [key] */
+                if (args.length != 2) {
+                    printMessage("invalid arguments, see 'help' for usage");
+                }
+
+                /* parse arguments */
+                String key = args[1];
+
+                /* PLACEHOLDER for RPC */
+
+                printMessage("retVal");
+            }
 
             /* DELETE operation */
-            else if (args[0].equals("delete")) {}
+            else if (args[0].equals("delete")) {
+
+                /* check whether cmd matches delete [key] */
+                if (args.length != 2) {
+                    printMessage("invalid arguments, see 'help' for usage");
+                }
+
+                /* parse arguments */
+                String key = args[1];
+
+                /* PLACEHOLDER for RPC */
+
+                printMessage("ok");
+            }
 
             /* EXIT operatoin */
             else if (args[0].equals("exit")) {
@@ -83,4 +123,3 @@ public class kvClient {
         }
     }
 }
-
