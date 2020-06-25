@@ -78,26 +78,25 @@ public class kvMaster {
             /* unbind PUT service */
             printMessage("unbinding PUT service...");
             Naming.unbind("kvPut");
+            UnicastRemoteObject.unexportObject(kvPut, true);
             System.out.println("done");
 
             /* unbind UPDATE service */
             printMessage("unbinding UPDATE service...");
             Naming.unbind("kvUpdate");
+            UnicastRemoteObject.unexportObject(kvUpdate, true);
             System.out.println("done");
 
             /* unbind HALT service */
             printMessage("unbinding HALT service...");
             Naming.unbind("sysHalt");
+            UnicastRemoteObject.unexportObject(sysHalt, true);
             System.out.println("done");
 
             /* stop RMI registry */
             printMessage("closing RMI registry...");
-            if (UnicastRemoteObject.unexportObject(registry, true)) {
-                System.out.println("done");
-            }
-            else {
-                System.out.println("failed");
-            }
+            UnicastRemoteObject.unexportObject(registry, true);
+            System.out.println("done");
 
         } catch (Exception e) {
             System.out.println("failed");
@@ -105,7 +104,6 @@ public class kvMaster {
             return;
         }
         printMessageln("goodbye");
-        System.exit(0);
     }
 
     private static boolean getPowerStat() {
