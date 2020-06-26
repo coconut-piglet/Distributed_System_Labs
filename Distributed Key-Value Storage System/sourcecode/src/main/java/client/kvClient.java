@@ -2,10 +2,7 @@ package client;
 
 import common.KeyValuePair;
 import common.Message;
-import server.master.api.kvDelete;
-import server.master.api.kvPut;
-import server.master.api.kvUpdate;
-import server.master.api.sysHalt;
+import server.master.api.*;
 
 import java.rmi.Naming;
 import java.util.Scanner;
@@ -19,7 +16,7 @@ import java.util.Scanner;
  *   [√] support command HELP
  *   [√] support command EXIT
  *   [√] support PUT RPC
- *   [ ] support READ RPC
+ *   [√] support READ RPC
  *   [√] support DELETE RPC
  *   [√] support UPDATE RPC
  *   [√] support SHUTDOWN RPC
@@ -147,9 +144,28 @@ public class kvClient {
                 /* parse arguments */
                 String key = args[1];
 
-                /* PLACEHOLDER for RPC */
+                /* create new KeyValuePair object */
+                KeyValuePair keyValuePair = new KeyValuePair(key, "VALUE");
 
-                printMessage("retVal");
+                Message retMsg;
+                try {
+                    /* call READ via RPC */
+                    kvRead readService = (kvRead) Naming.lookup("kvRead");
+                    retMsg = readService.read(keyValuePair);
+
+                    /* SUCCESS: a new key/value pair has been stored */
+                    if (retMsg.getType().equals("SUCCESS")) {
+                        printMessage("ok");
+                    }
+                    /* ERROR: something went wrong on the server side */
+                    else {
+                        printMessage(retMsg.getContent());
+                        printMessage("operation failed");
+                    }
+                } catch (Exception e) {
+                    printMessage("sorry, something went wrong");
+                    e.printStackTrace();
+                }
             }
 
             /* DELETE operation */

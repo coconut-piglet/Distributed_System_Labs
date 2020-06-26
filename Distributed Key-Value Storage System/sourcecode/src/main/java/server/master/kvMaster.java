@@ -1,9 +1,6 @@
 package server.master;
 
-import server.master.implementation.kvDeleteImpl;
-import server.master.implementation.kvPutImpl;
-import server.master.implementation.kvUpdateImpl;
-import server.master.implementation.sysHaltImpl;
+import server.master.implementation.*;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
@@ -61,6 +58,12 @@ public class kvMaster {
             Naming.rebind("kvUpdate", kvUpdate);
             System.out.println("done");
 
+            /* bind READ service */
+            printMessage("binding READ service...");
+            kvReadImpl kvRead = new kvReadImpl();
+            Naming.rebind("kvRead", kvRead);
+            System.out.println("done");
+
             /* bind DELETE service */
             printMessage("binding DELETE service...");
             kvDeleteImpl kvDelete = new kvDeleteImpl();
@@ -92,6 +95,12 @@ public class kvMaster {
             printMessage("unbinding UPDATE service...");
             Naming.unbind("kvUpdate");
             UnicastRemoteObject.unexportObject(kvUpdate, true);
+            System.out.println("done");
+
+            /* unbind UPDATE service */
+            printMessage("unbinding READ service...");
+            Naming.unbind("kvRead");
+            UnicastRemoteObject.unexportObject(kvRead, true);
             System.out.println("done");
 
             /* unbind UPDATE service */
