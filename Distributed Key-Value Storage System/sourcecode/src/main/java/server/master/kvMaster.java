@@ -6,6 +6,8 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /*
  * Master Server of Distributed Key-Value Storage System
@@ -18,6 +20,10 @@ import java.rmi.server.UnicastRemoteObject;
 public class kvMaster {
 
     private static boolean powerOn;
+
+    private static HashMap<String, ReentrantReadWriteLock> mutex;
+
+    private static ReentrantReadWriteLock systemLock;
 
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
@@ -39,7 +45,12 @@ public class kvMaster {
 
         powerOn = true;
 
-        printMessageln("initializing service");
+        printMessageln("initializing mutex...");
+        systemLock = new ReentrantReadWriteLock();
+        mutex = new HashMap<String, ReentrantReadWriteLock>();
+        System.out.println("done");
+
+        printMessage("launch RMI registry...");
         try {
             /* start RMI registry on the default port */
             printMessage("launch RMI registry...");
@@ -116,8 +127,48 @@ public class kvMaster {
         printMessageln("goodbye");
     }
 
-    private static boolean getPowerStat() {
-        return powerOn;
+    private static void createLockIfNotExists(String key) {
+        /* acquire read lock first to check whether lock exists */
+        systemLock.readLock().lock();
+
+        /* if not exists */
+        if (!mutex.containsKey(key)) {
+            /* write lock should not be acquired when holding read lock */
+            systemLock.readLock().unlock();
+
+            /* critical session: these cold should execute atomically */
+            systemLock.writeLock().lock();
+            /* chances are that lock is created during unlock readLock and acquire writeLock */
+            /* thus have to check for the second time */
+            if (!mutex.containsKey(key)) {
+                ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+                mutex.put(key, lock);
+            }
+            systemLock.writeLock().unlock();
+
+        }
+        /* if exits */
+        else {
+            systemLock.readLock().unlock();
+        }
+    }
+
+    public static void lockRead(String key) {
+        createLockIfNotExists(key);
+        mutex.get(key).readLock().lock();
+    }
+
+    public static void lockWrite(String key) {
+        createLockIfNotExists(key);
+        mutex.get(key).writeLock().lock();
+    }
+
+    public static void unlockRead(String key) {
+        mutex.get(key).readLock().unlock();
+    }
+
+    public static void unlockWrite(String key) {
+        mutex.get(key).writeLock().unlock();
     }
 
     public static void shutdown() {
