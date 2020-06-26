@@ -14,7 +14,7 @@ import java.rmi.server.UnicastRemoteObject;
  * TODO:
  *   [√] implement basic logic
  *   [√] contact with master server
- *   [ ] implement concurrency control
+ *   [√] implement concurrency control
  */
 public class sysHaltImpl extends UnicastRemoteObject implements sysHalt {
 
@@ -24,16 +24,20 @@ public class sysHaltImpl extends UnicastRemoteObject implements sysHalt {
     @Override
     public Message halt() throws RemoteException {
 
+        kvMaster.lockSystem();
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
             sysShutdown powerService = (sysShutdown) Naming.lookup("//192.168.31.167:10000/sysShutdown");
             powerService.shutdown();
         } catch (Exception e) {
+            kvMaster.unlockSystem();
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
 
         kvMaster.shutdown();
+        kvMaster.unlockSystem();
+
         return new Message("SUCCESS", "start shutting down");
     }
 }

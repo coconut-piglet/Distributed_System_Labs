@@ -53,6 +53,7 @@ public class kvMaster {
 
         printMessage("launch RMI registry...");
         try {
+            lockSystem();
             /* start RMI registry on the default port */
             printMessage("launch RMI registry...");
             Registry registry = LocateRegistry.createRegistry(1099);
@@ -83,12 +84,14 @@ public class kvMaster {
             System.out.println("done");
 
             printMessageln("service initialized");
+            unlockSystem();
 
             while (powerOn) {
                 /* TODO: add node management routine */
                 Thread.sleep(1000);
             }
 
+            lockSystem();
             printMessageln("shutting down");
 
             /* unbind PUT service */
@@ -119,8 +122,10 @@ public class kvMaster {
             printMessage("closing RMI registry...");
             UnicastRemoteObject.unexportObject(registry, true);
             System.out.println("done");
+            unlockSystem();
 
         } catch (Exception e) {
+            unlockSystem();
             System.out.println("failed");
             e.printStackTrace();
             return;
@@ -164,12 +169,20 @@ public class kvMaster {
         mutex.get(key).writeLock().lock();
     }
 
+    public static void lockSystem() {
+        systemLock.writeLock().lock();
+    }
+
     public static void unlockRead(String key) {
         mutex.get(key).readLock().unlock();
     }
 
     public static void unlockWrite(String key) {
         mutex.get(key).writeLock().unlock();
+    }
+
+    public static void unlockSystem() {
+        systemLock.writeLock().unlock();
     }
 
     public static void shutdown() {
