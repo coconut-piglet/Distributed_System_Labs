@@ -1,6 +1,7 @@
 package server.storage;
 
 import server.storage.implementation.sysGetImpl;
+import server.storage.implementation.sysPutImpl;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -85,6 +86,12 @@ public class kvStorage {
             Naming.rebind(constructName("sysGet"), sysGet);
             System.out.println("done");
 
+            /* bind sysPut service */
+            printMessage("binding PUT service...");
+            sysPutImpl sysPut = new sysPutImpl();
+            Naming.rebind(constructName("sysPut"), sysPut);
+            System.out.println("done");
+
             printMessageln("service initialized");
 
             /* PLACEHOLDER for routine */
@@ -95,6 +102,12 @@ public class kvStorage {
             //printMessage("unbinding GET service...");
             //Naming.unbind(constructName("sysGet"));
             //UnicastRemoteObject.unexportObject(sysGet, true);
+            //System.out.println("done");
+
+            /* unbind sysPut service */
+            //printMessage("unbinding PUT service...");
+            //Naming.unbind(constructName("sysPut"));
+            //UnicastRemoteObject.unexportObject(sysPut, true);
             //System.out.println("done");
 
             /* stop RMI registry */
