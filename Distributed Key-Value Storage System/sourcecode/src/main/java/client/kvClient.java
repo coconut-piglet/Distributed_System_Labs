@@ -26,6 +26,9 @@ import java.util.Scanner;
  *   [√] support command SHUTDOWN
  */
 public class kvClient {
+
+    private static boolean debug;
+
     private static void printUsage() {
         System.out.println("usage:");
         System.out.println("\thelp               display helper information");
@@ -49,6 +52,9 @@ public class kvClient {
         System.out.println("`8888Y' Y88888P Y8888P'     VP  d8'          YP   YD    YP     `Y88P' Y88888P Y888888P Y88888P VP   V8P    YP    ");
         System.out.println("_________________________________________________________________________________________________________________");
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
+
+        /* disable printStackTrace for normal user */
+        debug = false;
 
         /* start routine */
         while (true) {
@@ -127,8 +133,9 @@ public class kvClient {
                         printMessage("operation failed");
                     }
                 } catch (Exception e) {
-                    printMessage("sorry, something went wrong");
-                    e.printStackTrace();
+                    printMessage("operation failed, please check your internet connection");
+                    if (debug) e.printStackTrace();
+                    continue;
                 }
             }
 
@@ -163,8 +170,9 @@ public class kvClient {
                         printMessage("operation failed");
                     }
                 } catch (Exception e) {
-                    printMessage("sorry, something went wrong");
-                    e.printStackTrace();
+                    printMessage("operation failed, please check your internet connection");
+                    if (debug) e.printStackTrace();
+                    continue;
                 }
             }
 
@@ -199,8 +207,9 @@ public class kvClient {
                         printMessage("operation failed");
                     }
                 } catch (Exception e) {
-                    printMessage("sorry, something went wrong");
-                    e.printStackTrace();
+                    printMessage("operation failed, please check your internet connection");
+                    if (debug) e.printStackTrace();
+                    continue;
                 }
             }
 
@@ -245,8 +254,8 @@ public class kvClient {
                     }
 
                 } catch (Exception e) {
-                    printMessage("sorry, something went wrong");
-                    e.printStackTrace();
+                    printMessage("operation failed, please check your internet connection");
+                    if (debug) e.printStackTrace();
                     continue;
                 }
 
