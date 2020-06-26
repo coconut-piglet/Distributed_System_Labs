@@ -1,8 +1,10 @@
 package server.storage;
 
+import common.Node;
 import server.storage.implementation.sysGetImpl;
 import server.storage.implementation.sysPutImpl;
 import server.storage.implementation.sysShutdownImpl;
+import server.storage.zookeeper.zkRegister;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -17,7 +19,7 @@ import java.util.HashMap;
  * TODO:
  *   [√] support storage in memory
  *   [√] support RPC
- *   [ ] support zookeeper
+ *   [√] support zookeeper
  *   [ ] upgrade to journaling storage
  *   [ ] upgrade to persistent storage
  */
@@ -98,12 +100,34 @@ public class kvStorage {
 
             printMessageln("service initialized");
 
+            /* register to zookeeper cluster */
+            printMessageln("registering server...");
+
+            /* prepare node information */
+            printMessage("preparing node information...");
+            Node node = new Node("kvStorage-00", hostAddress, hostPort, "kvBackup-00", 100);
+            System.out.println("done");
+
+            /* connect to zookeeper */
+            printMessage("connecting to zookeeper...");
+            zkRegister zk = new zkRegister("127.0.0.1:2181", node);
+            zk.run();
+            System.out.println("done");
+
+
+            printMessageln("server registered");
+
             while (powerOn) {
                 /* TODO: add data management routine */
                 Thread.sleep(1000);
             }
 
             printMessageln("shutting down");
+
+            /* disconnect from zookeeper */
+            printMessage("disconnecting from zookeeper...");
+            zkRegister.disconnect();
+            System.out.println("done");
 
             /* unbind sysGet service */
             printMessage("unbinding GET service...");
