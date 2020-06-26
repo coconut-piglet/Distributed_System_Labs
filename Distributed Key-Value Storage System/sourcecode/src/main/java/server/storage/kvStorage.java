@@ -23,7 +23,7 @@ public class kvStorage {
 
     private static HashMap<String, String> storage;
 
-    private static String hostname;
+    private static String hostAddress;
 
     private static int port;
 
@@ -36,7 +36,7 @@ public class kvStorage {
     }
 
     private static String constructName(String service) {
-        return "//" + hostname + ":" + port + "/" + service;
+        return "//" + hostAddress + ":" + port + "/" + service;
     }
 
     private static void devFakeData() {
@@ -65,8 +65,8 @@ public class kvStorage {
         try {
             /* print ip address information */
             InetAddress inetAddress = Inet4Address.getLocalHost();
-            hostname = inetAddress.getHostName();
-            printMessageln("current ip address..." + hostname);
+            hostAddress = inetAddress.getHostAddress();
+            printMessageln("current ip address..." + hostAddress);
 
             /* start RMI registry on random port */
             int maxPortNum = 20000, minPortNum = 10000;
