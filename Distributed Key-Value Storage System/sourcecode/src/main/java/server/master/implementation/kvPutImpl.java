@@ -30,7 +30,7 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
 
         /* if existed, send a warning to the client */
         if (checkResult.getType().equals("EXISTED")) {
-            return new Message("WARNING", "existing key");
+            return new Message("WARNING", checkResult.getContent());
         }
         /* otherwise continue creating new key/value pair */
         else {
