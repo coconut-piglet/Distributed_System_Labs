@@ -1,6 +1,5 @@
 package server.master.implementation;
 
-import common.KeyValuePair;
 import common.Message;
 import server.master.api.kvRead;
 import server.storage.api.sysGet;
@@ -22,22 +21,19 @@ public class kvReadImpl extends UnicastRemoteObject implements kvRead {
     }
 
     @Override
-    public Message read(KeyValuePair keyValuePair) throws RemoteException {
-
-        String key = keyValuePair.getKey();
+    public Message read(String key) throws RemoteException {
 
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
             sysGet getService = (sysGet) Naming.lookup("//192.168.31.167:10000/sysGet");
-            String value = getService.get(key);
+            String value = getService.get(key).getValue();
             if (value == null)
                 return new Message("NOTFOUND", "no value has been recorded for this key");
             else {
                 return new Message("SUCCESS", value);
             }
         } catch (Exception e) {
-            e.printStackTrace();
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
     }

@@ -1,5 +1,6 @@
 package server.storage.implementation;
 
+import common.KeyValuePair;
 import server.storage.api.sysPut;
 import server.storage.kvStorage;
 
@@ -17,8 +18,10 @@ public class sysPutImpl extends UnicastRemoteObject implements sysPut {
     }
 
     @Override
-    public void put(String key, String value) throws RemoteException {
+    public void put(KeyValuePair keyValuePair) throws RemoteException {
 
+        String key = keyValuePair.getKey();
+        String value = keyValuePair.getValue();
         kvStorage.putValue(key, value);
 
     }

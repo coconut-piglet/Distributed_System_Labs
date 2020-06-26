@@ -3,9 +3,9 @@ package common;
 import java.io.Serializable;
 
 public class KeyValuePair implements Serializable {
-    private String key;
+    private final String key;
 
-    private String value;
+    private final String value;
 
     public String getKey() {
         return key;

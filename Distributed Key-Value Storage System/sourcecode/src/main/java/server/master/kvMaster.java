@@ -11,7 +11,7 @@ import java.rmi.server.UnicastRemoteObject;
  * Master Server of Distributed Key-Value Storage System
  * TODO:
  *   [√] add RPC support for client
- *   [ ] add RPC to storage server
+ *   [√] add RPC to storage server
  *   [ ] add zookeeper
  *   [ ] add node management
  */
@@ -52,12 +52,6 @@ public class kvMaster {
             Naming.rebind("kvPut", kvPut);
             System.out.println("done");
 
-            /* bind UPDATE service */
-            printMessage("binding UPDATE service...");
-            kvUpdateImpl kvUpdate = new kvUpdateImpl();
-            Naming.rebind("kvUpdate", kvUpdate);
-            System.out.println("done");
-
             /* bind READ service */
             printMessage("binding READ service...");
             kvReadImpl kvRead = new kvReadImpl();
@@ -71,61 +65,55 @@ public class kvMaster {
             System.out.println("done");
 
             /* bind HALT service */
-            printMessage("binding HALT service...");
+            printMessage("binding POWER service...");
             sysHaltImpl sysHalt = new sysHaltImpl();
             Naming.rebind("sysHalt", sysHalt);
             System.out.println("done");
 
             printMessageln("service initialized");
 
-            //while (powerOn) {
-            //    /* TODO: add node management routine */
-            //    printMessageln("running routine");
-            //}
+            while (powerOn) {
+                /* TODO: add node management routine */
+                Thread.sleep(1000);
+            }
 
-            //printMessageln("shutting down");
+            printMessageln("shutting down");
 
             /* unbind PUT service */
-            //printMessage("unbinding PUT service...");
-            //Naming.unbind("kvPut");
-            //UnicastRemoteObject.unexportObject(kvPut, true);
-            //System.out.println("done");
+            printMessage("unbinding PUT service...");
+            Naming.unbind("kvPut");
+            UnicastRemoteObject.unexportObject(kvPut, true);
+            System.out.println("done");
 
             /* unbind UPDATE service */
-            //printMessage("unbinding UPDATE service...");
-            //Naming.unbind("kvUpdate");
-            //UnicastRemoteObject.unexportObject(kvUpdate, true);
-            //System.out.println("done");
+            printMessage("unbinding READ service...");
+            Naming.unbind("kvRead");
+            UnicastRemoteObject.unexportObject(kvRead, true);
+            System.out.println("done");
 
             /* unbind UPDATE service */
-            //printMessage("unbinding READ service...");
-            //Naming.unbind("kvRead");
-            //UnicastRemoteObject.unexportObject(kvRead, true);
-            //System.out.println("done");
-
-            /* unbind UPDATE service */
-            //printMessage("unbinding DELETE service...");
-            //Naming.unbind("kvDelete");
-            //UnicastRemoteObject.unexportObject(kvDelete, true);
-            //System.out.println("done");
+            printMessage("unbinding DELETE service...");
+            Naming.unbind("kvDelete");
+            UnicastRemoteObject.unexportObject(kvDelete, true);
+            System.out.println("done");
 
             /* unbind HALT service */
-            //printMessage("unbinding HALT service...");
-            //Naming.unbind("sysHalt");
-            //UnicastRemoteObject.unexportObject(sysHalt, true);
-            //System.out.println("done");
+            printMessage("unbinding POWER service...");
+            Naming.unbind("sysHalt");
+            UnicastRemoteObject.unexportObject(sysHalt, true);
+            System.out.println("done");
 
             /* stop RMI registry */
-            //printMessage("closing RMI registry...");
-            //UnicastRemoteObject.unexportObject(registry, true);
-            //System.out.println("done");
+            printMessage("closing RMI registry...");
+            UnicastRemoteObject.unexportObject(registry, true);
+            System.out.println("done");
 
         } catch (Exception e) {
             System.out.println("failed");
             e.printStackTrace();
             return;
         }
-        //printMessageln("goodbye");
+        printMessageln("goodbye");
     }
 
     private static boolean getPowerStat() {
@@ -133,7 +121,6 @@ public class kvMaster {
     }
 
     public static void shutdown() {
-        printMessageln("received shutdown command");
         powerOn = false;
     }
 }

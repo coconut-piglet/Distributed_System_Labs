@@ -1,6 +1,5 @@
 package server.master.api;
 
-import common.KeyValuePair;
 import common.Message;
 
 import java.io.Serializable;

@@ -25,8 +25,10 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
     @Override
     public Message put(KeyValuePair keyValuePair) throws RemoteException {
 
+        String key = keyValuePair.getKey();
+
         /* check whether the key has been stored before */
-        Message checkResult = checkExistence(keyValuePair);
+        Message checkResult = checkExistence(key);
 
         /* if existed, send a warning to the client */
         if (checkResult.getType().equals("EXISTED")) {
@@ -34,46 +36,44 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
         }
         /* otherwise continue creating new key/value pair */
         else {
-            return createData(keyValuePair);
+            return putData(keyValuePair);
         }
     }
 
-    /* check whether the key provided is already in the database */
-    private Message checkExistence (KeyValuePair keyValuePair) {
+    @Override
+    public Message update(KeyValuePair keyValuePair) throws RemoteException {
+        return putData(keyValuePair);
+    }
 
-        String key = keyValuePair.getKey();
+    /* check whether the key provided is already in the database */
+    private Message checkExistence (String key) {
 
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
             sysGet getService = (sysGet) Naming.lookup("//192.168.31.167:10000/sysGet");
-            String value = getService.get(key);
+            String value = getService.get(key).getValue();
             if (value == null)
                 return new Message("PASS", "this key has not value recorded");
             else {
                 return new Message("EXISTED", value);
             }
         } catch (Exception e) {
-            e.printStackTrace();
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
 
     }
 
     /* insert new key/value pair to the database */
-    private Message createData (KeyValuePair keyValuePair) {
-
-        String key = keyValuePair.getKey();
-        String value = keyValuePair.getValue();
+    private Message putData (KeyValuePair keyValuePair) {
 
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
             sysPut putService = (sysPut) Naming.lookup("//192.168.31.167:10000/sysPut");
-            putService.put(key, value);
+            putService.put(keyValuePair);
             return new Message("SUCCESS","OK");
         } catch (Exception e) {
-            e.printStackTrace();
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
 

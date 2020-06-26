@@ -2,6 +2,7 @@ package server.storage;
 
 import server.storage.implementation.sysGetImpl;
 import server.storage.implementation.sysPutImpl;
+import server.storage.implementation.sysShutdownImpl;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -26,7 +27,9 @@ public class kvStorage {
 
     private static String hostAddress;
 
-    private static int port;
+    private static int hostPort;
+
+    private static boolean powerOn;
 
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
@@ -37,11 +40,7 @@ public class kvStorage {
     }
 
     private static String constructName(String service) {
-        return "//" + hostAddress + ":" + port + "/" + service;
-    }
-
-    private static void devFakeData() {
-        storage.put("se347", "distributed system");
+        return "//" + hostAddress + ":" + hostPort + "/" + service;
     }
 
     public static void main(String[] argv) {
@@ -54,14 +53,13 @@ public class kvStorage {
         System.out.println("________________________________________________________________________________________________________________________");
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
 
+        powerOn = true;
+
         printMessageln("initializing service");
 
         printMessage("loading storage...");
         storage = new HashMap<String, String>();
         System.out.println("done");
-
-        /* for development purpose, add fake data to storage */
-        devFakeData();
 
         try {
             /* print ip address information */
@@ -71,13 +69,13 @@ public class kvStorage {
 
             /* start RMI registry on random port */
             int maxPortNum = 20000, minPortNum = 10000;
-            port = (int) (Math.random() * (maxPortNum - minPortNum) + minPortNum);
+            hostPort = (int) (Math.random() * (maxPortNum - minPortNum) + minPortNum);
 
             /* for development purpose, port is set manually to 10000 */
-            port = 10000;
+            hostPort = 10000;
 
-            printMessage("launch RMI registry on port " + port + "...");
-            Registry registry = LocateRegistry.createRegistry(port);
+            printMessage("launch RMI registry on port " + hostPort + "...");
+            Registry registry = LocateRegistry.createRegistry(hostPort);
             System.out.println("done");
 
             /* bind sysGet service */
@@ -92,35 +90,50 @@ public class kvStorage {
             Naming.rebind(constructName("sysPut"), sysPut);
             System.out.println("done");
 
+            /* bind sysPut service */
+            printMessage("binding POWER service...");
+            sysShutdownImpl sysShutdown = new sysShutdownImpl();
+            Naming.rebind(constructName("sysShutdown"), sysShutdown);
+            System.out.println("done");
+
             printMessageln("service initialized");
 
-            /* PLACEHOLDER for routine */
+            while (powerOn) {
+                /* TODO: add data management routine */
+                Thread.sleep(1000);
+            }
 
-            //printMessageln("shutting down");
+            printMessageln("shutting down");
 
             /* unbind sysGet service */
-            //printMessage("unbinding GET service...");
-            //Naming.unbind(constructName("sysGet"));
-            //UnicastRemoteObject.unexportObject(sysGet, true);
-            //System.out.println("done");
+            printMessage("unbinding GET service...");
+            Naming.unbind(constructName("sysGet"));
+            UnicastRemoteObject.unexportObject(sysGet, true);
+            System.out.println("done");
 
             /* unbind sysPut service */
-            //printMessage("unbinding PUT service...");
-            //Naming.unbind(constructName("sysPut"));
-            //UnicastRemoteObject.unexportObject(sysPut, true);
-            //System.out.println("done");
+            printMessage("unbinding PUT service...");
+            Naming.unbind(constructName("sysPut"));
+            UnicastRemoteObject.unexportObject(sysPut, true);
+            System.out.println("done");
+
+            /* unbind sysShutdown service */
+            printMessage("unbinding POWER service...");
+            Naming.unbind(constructName("sysShutdown"));
+            UnicastRemoteObject.unexportObject(sysShutdown, true);
+            System.out.println("done");
 
             /* stop RMI registry */
-            //printMessage("closing RMI registry...");
-            //UnicastRemoteObject.unexportObject(registry, true);
-            //System.out.println("done");
+            printMessage("closing RMI registry...");
+            UnicastRemoteObject.unexportObject(registry, true);
+            System.out.println("done");
 
         } catch (Exception e) {
             System.out.println("failed");
             e.printStackTrace();
             return;
         }
-        //printMessageln("goodbye");
+        printMessageln("goodbye");
     }
 
     public static String getValue(String key) {
@@ -129,5 +142,9 @@ public class kvStorage {
 
     public static void putValue(String key, String value) {
         storage.put(key, value);
+    }
+
+    public static void shutdown() {
+        powerOn = false;
     }
 }

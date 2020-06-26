@@ -12,15 +12,15 @@ import java.rmi.server.UnicastRemoteObject;
  * TODO:
  *   [√] implement basic logic
  */
-public class sysGetImpl  extends UnicastRemoteObject implements sysGet {
+public class sysGetImpl extends UnicastRemoteObject implements sysGet {
 
     public sysGetImpl() throws RemoteException {
     }
 
     @Override
-    public String get(String key) throws RemoteException {
+    public KeyValuePair get(String key) throws RemoteException {
 
-        return kvStorage.getValue(key);
+        return new KeyValuePair(key, kvStorage.getValue(key));
 
     }
 

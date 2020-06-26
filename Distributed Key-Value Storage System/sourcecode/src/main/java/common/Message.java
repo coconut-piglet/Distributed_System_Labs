@@ -3,9 +3,9 @@ package common;
 import java.io.Serializable;
 
 public class Message implements Serializable {
-    private String type;
+    private final String type;
 
-    private String content;
+    private final String content;
 
     public String getType() {
         return type;

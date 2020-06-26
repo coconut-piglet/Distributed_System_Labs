@@ -10,5 +10,6 @@ import java.rmi.RemoteException;
 public interface kvPut extends Remote, Serializable {
 
     public Message put(KeyValuePair keyValuePair) throws RemoteException;
+    public Message update(KeyValuePair keyValuePair) throws RemoteException;
 
 }

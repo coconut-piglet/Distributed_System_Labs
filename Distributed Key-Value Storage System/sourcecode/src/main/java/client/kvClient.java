@@ -27,7 +27,9 @@ import java.util.Scanner;
  */
 public class kvClient {
 
-    private static boolean debug;
+    private static String serverAddress;
+
+    private static String serverPort;
 
     private static void printUsage() {
         System.out.println("usage:");
@@ -42,6 +44,20 @@ public class kvClient {
         System.out.println("kvClient: " + msg);
     }
 
+    private static String parseValue(String[] args) {
+        StringBuilder value = new StringBuilder(args[2]);
+        int length = args.length;
+        for (int i = 3; i < length; i++) {
+            value.append(" ");
+            value.append(args[i]);
+        }
+        return value.toString();
+    }
+
+    private static String constructName(String service) {
+        return "//" + serverAddress + ":" + serverPort + "/" + service;
+    }
+
     public static void main(String[] argv) {
         /* print information */
         System.out.println(".d8888. d88888b d8888b.   j88D  d88888D      db   dD db    db  .o88b. db      d888888b d88888b d8b   db d888888b ");
@@ -53,15 +69,25 @@ public class kvClient {
         System.out.println("_________________________________________________________________________________________________________________");
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
 
-        /* disable printStackTrace for normal user */
-        debug = false;
+        /* server address and port must be provided as arguments */
+        /* debug output can be triggered by adding '-debug' to program arguments */
+        boolean debug = false;
+        if (argv.length != 2 && argv.length != 3) {
+            printMessage("invalid arguments, please at lest specify server address and port");
+        }
+        else if (argv.length == 3 && argv[2].equals("-debug")) {
+            printMessage("**** DEBUG MODE ON ****");
+            debug = true;
+        }
+        serverAddress = argv[0];
+        serverPort = argv[1];
 
         /* start routine */
         while (true) {
             System.out.print("command > ");
             Scanner scanner = new Scanner(System.in);
             String cmd = scanner.nextLine().trim();
-            String args[] = cmd.split(" ");
+            String[] args = cmd.split(" ");
 
             /* empty input or HELP */
             if (cmd.equals("") || args[0].equals("help")) {
@@ -75,28 +101,29 @@ public class kvClient {
             else if (args[0].equals("put")) {
 
                 /* check whether cmd matches put [key] [value] */
-                if (args.length != 3) {
+                if (args.length < 3) {
                     printMessage("invalid arguments, see 'help' for usage");
                     continue;
                 }
 
                 /* parse arguments */
                 String key = args[1];
-                String value = args[2];
+                String value = parseValue(args);
 
                 /* create new KeyValuePair object */
                 KeyValuePair keyValuePair = new KeyValuePair(key, value);
 
-                Message retMsg;
+                Message retMsg = null;
                 try {
                     /* call PUT via RPC */
-                    kvPut putService = (kvPut) Naming.lookup("kvPut");
+                    kvPut putService = (kvPut) Naming.lookup(constructName("kvPut"));
                     retMsg = putService.put(keyValuePair);
 
                     /* SUCCESS: a new key/value pair has been stored */
                     if (retMsg.getType().equals("SUCCESS")) {
                         printMessage("ok");
                     }
+
                     /* WARNING: the key has been stored before */
                     else if (retMsg.getType().equals("WARNING")) {
 
@@ -110,13 +137,13 @@ public class kvClient {
                         if (confirmation.equals("Y")) {
 
                             /* call UPDATE via RPC */
-                            kvUpdate updateService = (kvUpdate) Naming.lookup("kvUpdate");
-                            retMsg = updateService.update(keyValuePair);
+                            retMsg = putService.update(keyValuePair);
 
                             /* SUCCESS: the value has been updated */
                             if (retMsg.getType().equals("SUCCESS")) {
                                 printMessage("ok");
                             }
+
                             /* ERROR: something went wrong on the server side */
                             else {
                                 printMessage(retMsg.getContent());
@@ -127,6 +154,7 @@ public class kvClient {
                             printMessage("operation abort");
                         }
                     }
+
                     /* ERROR: something went wrong on the server side */
                     else {
                         printMessage(retMsg.getContent());
@@ -135,7 +163,6 @@ public class kvClient {
                 } catch (Exception e) {
                     printMessage("operation failed, please check your internet connection");
                     if (debug) e.printStackTrace();
-                    continue;
                 }
             }
 
@@ -154,17 +181,18 @@ public class kvClient {
                 /* create new KeyValuePair object */
                 KeyValuePair keyValuePair = new KeyValuePair(key, "VALUE");
 
-                Message retMsg;
+                Message retMsg = null;
                 try {
                     /* call READ via RPC */
-                    kvRead readService = (kvRead) Naming.lookup("kvRead");
-                    retMsg = readService.read(keyValuePair);
+                    kvRead readService = (kvRead) Naming.lookup(constructName("kvRead"));
+                    retMsg = readService.read(key);
 
                     /* SUCCESS: a new key/value pair has been stored */
                     /* NOTFOUND: no value recorded, but read operation is successful */
                     if (retMsg.getType().equals("SUCCESS") || retMsg.getType().equals("NOTFOUND")) {
                         printMessage(retMsg.getContent());
                     }
+
                     /* ERROR: something went wrong on the server side */
                     else {
                         printMessage(retMsg.getContent());
@@ -173,7 +201,6 @@ public class kvClient {
                 } catch (Exception e) {
                     printMessage("operation failed, please check your internet connection");
                     if (debug) e.printStackTrace();
-                    continue;
                 }
             }
 
@@ -192,16 +219,17 @@ public class kvClient {
                 /* create new KeyValuePair object */
                 KeyValuePair keyValuePair = new KeyValuePair(key, "NULL");
 
-                Message retMsg;
+                Message retMsg = null;
                 try {
                     /* call DELETE via RPC */
-                    kvDelete deleteService = (kvDelete) Naming.lookup("kvDelete");
-                    retMsg = deleteService.delete(keyValuePair);
+                    kvDelete deleteService = (kvDelete) Naming.lookup(constructName("kvDelete"));
+                    retMsg = deleteService.delete(key);
 
                     /* SUCCESS: a new key/value pair has been stored */
                     if (retMsg.getType().equals("SUCCESS")) {
                         printMessage("ok");
                     }
+
                     /* ERROR: something went wrong on the server side */
                     else {
                         printMessage(retMsg.getContent());
@@ -210,7 +238,6 @@ public class kvClient {
                 } catch (Exception e) {
                     printMessage("operation failed, please check your internet connection");
                     if (debug) e.printStackTrace();
-                    continue;
                 }
             }
 
@@ -238,18 +265,20 @@ public class kvClient {
                     continue;
                 }
 
-                Message retMsg;
+                Message retMsg = null;
                 try {
                     /* call HALT via RPC */
-                    sysHalt haltService = (sysHalt) Naming.lookup("sysHalt");
+                    sysHalt haltService = (sysHalt) Naming.lookup(constructName("sysHalt"));
                     retMsg = haltService.halt();
 
                     /* SUCCESS: remote server has received command */
                     if (retMsg.getType().equals("SUCCESS")) {
                         printMessage("remote server has been closed");
                     }
+
                     /* ERROR: something went wrong on the server side */
                     else {
+                        printMessage(retMsg.getContent());
                         printMessage("operation failed");
                         continue;
                     }
