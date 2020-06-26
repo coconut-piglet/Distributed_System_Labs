@@ -1,5 +1,6 @@
 package server.master;
 
+import server.master.implementation.kvDeleteImpl;
 import server.master.implementation.kvPutImpl;
 import server.master.implementation.kvUpdateImpl;
 import server.master.implementation.sysHaltImpl;
@@ -60,6 +61,12 @@ public class kvMaster {
             Naming.rebind("kvUpdate", kvUpdate);
             System.out.println("done");
 
+            /* bind DELETE service */
+            printMessage("binding DELETE service...");
+            kvDeleteImpl kvDelete = new kvDeleteImpl();
+            Naming.rebind("kvDelete", kvDelete);
+            System.out.println("done");
+
             /* bind HALT service */
             printMessage("binding HALT service...");
             sysHaltImpl sysHalt = new sysHaltImpl();
@@ -85,6 +92,12 @@ public class kvMaster {
             printMessage("unbinding UPDATE service...");
             Naming.unbind("kvUpdate");
             UnicastRemoteObject.unexportObject(kvUpdate, true);
+            System.out.println("done");
+
+            /* unbind UPDATE service */
+            printMessage("unbinding DELETE service...");
+            Naming.unbind("kvDelete");
+            UnicastRemoteObject.unexportObject(kvDelete, true);
             System.out.println("done");
 
             /* unbind HALT service */
