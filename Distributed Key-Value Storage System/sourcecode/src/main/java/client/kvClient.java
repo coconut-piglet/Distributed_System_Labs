@@ -161,8 +161,9 @@ public class kvClient {
                     retMsg = readService.read(keyValuePair);
 
                     /* SUCCESS: a new key/value pair has been stored */
-                    if (retMsg.getType().equals("SUCCESS")) {
-                        printMessage("ok");
+                    /* NOTFOUND: no value recorded, but read operation is successful */
+                    if (retMsg.getType().equals("SUCCESS") || retMsg.getType().equals("NOTFOUND")) {
+                        printMessage(retMsg.getContent());
                     }
                     /* ERROR: something went wrong on the server side */
                     else {

@@ -78,54 +78,54 @@ public class kvMaster {
 
             printMessageln("service initialized");
 
-            while (powerOn) {
-                /* TODO: add node management routine */
-                printMessageln("running routine");
-            }
+            //while (powerOn) {
+            //    /* TODO: add node management routine */
+            //    printMessageln("running routine");
+            //}
 
-            printMessageln("shutting down");
+            //printMessageln("shutting down");
 
             /* unbind PUT service */
-            printMessage("unbinding PUT service...");
-            Naming.unbind("kvPut");
-            UnicastRemoteObject.unexportObject(kvPut, true);
-            System.out.println("done");
+            //printMessage("unbinding PUT service...");
+            //Naming.unbind("kvPut");
+            //UnicastRemoteObject.unexportObject(kvPut, true);
+            //System.out.println("done");
 
             /* unbind UPDATE service */
-            printMessage("unbinding UPDATE service...");
-            Naming.unbind("kvUpdate");
-            UnicastRemoteObject.unexportObject(kvUpdate, true);
-            System.out.println("done");
+            //printMessage("unbinding UPDATE service...");
+            //Naming.unbind("kvUpdate");
+            //UnicastRemoteObject.unexportObject(kvUpdate, true);
+            //System.out.println("done");
 
             /* unbind UPDATE service */
-            printMessage("unbinding READ service...");
-            Naming.unbind("kvRead");
-            UnicastRemoteObject.unexportObject(kvRead, true);
-            System.out.println("done");
+            //printMessage("unbinding READ service...");
+            //Naming.unbind("kvRead");
+            //UnicastRemoteObject.unexportObject(kvRead, true);
+            //System.out.println("done");
 
             /* unbind UPDATE service */
-            printMessage("unbinding DELETE service...");
-            Naming.unbind("kvDelete");
-            UnicastRemoteObject.unexportObject(kvDelete, true);
-            System.out.println("done");
+            //printMessage("unbinding DELETE service...");
+            //Naming.unbind("kvDelete");
+            //UnicastRemoteObject.unexportObject(kvDelete, true);
+            //System.out.println("done");
 
             /* unbind HALT service */
-            printMessage("unbinding HALT service...");
-            Naming.unbind("sysHalt");
-            UnicastRemoteObject.unexportObject(sysHalt, true);
-            System.out.println("done");
+            //printMessage("unbinding HALT service...");
+            //Naming.unbind("sysHalt");
+            //UnicastRemoteObject.unexportObject(sysHalt, true);
+            //System.out.println("done");
 
             /* stop RMI registry */
-            printMessage("closing RMI registry...");
-            UnicastRemoteObject.unexportObject(registry, true);
-            System.out.println("done");
+            //printMessage("closing RMI registry...");
+            //UnicastRemoteObject.unexportObject(registry, true);
+            //System.out.println("done");
 
         } catch (Exception e) {
             System.out.println("failed");
             e.printStackTrace();
             return;
         }
-        printMessageln("goodbye");
+        //printMessageln("goodbye");
     }
 
     private static boolean getPowerStat() {

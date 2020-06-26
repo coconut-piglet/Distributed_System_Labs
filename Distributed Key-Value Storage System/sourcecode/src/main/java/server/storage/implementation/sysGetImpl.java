@@ -18,11 +18,9 @@ public class sysGetImpl  extends UnicastRemoteObject implements sysGet {
     }
 
     @Override
-    public KeyValuePair get(KeyValuePair keyValuePair) throws RemoteException {
+    public String get(String key) throws RemoteException {
 
-        String key = keyValuePair.getKey();
-        String value = kvStorage.getValue(key);
-        return new KeyValuePair(key, value);
+        return kvStorage.getValue(key);
 
     }
 

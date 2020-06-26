@@ -111,12 +111,7 @@ public class kvStorage {
     }
 
     public static String getValue(String key) {
-        if (storage.containsKey(key)) {
-            return storage.get(key);
-        }
-        else {
-            return null;
-        }
+        return storage.getOrDefault(key, null);
     }
 
     public static void putValue(String key, String value) {
