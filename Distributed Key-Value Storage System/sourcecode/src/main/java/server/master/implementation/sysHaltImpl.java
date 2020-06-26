@@ -14,6 +14,7 @@ import java.rmi.server.UnicastRemoteObject;
  * TODO:
  *   [√] implement basic logic
  *   [√] contact with master server
+ *   [ ] implement concurrency control
  */
 public class sysHaltImpl extends UnicastRemoteObject implements sysHalt {
 

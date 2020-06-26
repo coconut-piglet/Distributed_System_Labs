@@ -14,6 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * TODO:
  *   [√] add RPC support for client
  *   [√] add RPC to storage server
+ *   [√] add mutex
  *   [ ] add zookeeper
  *   [ ] add node management
  */
