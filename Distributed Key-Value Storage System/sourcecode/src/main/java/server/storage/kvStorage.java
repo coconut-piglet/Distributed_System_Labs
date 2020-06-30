@@ -35,6 +35,8 @@ public class kvStorage {
 
     private static int capacity;
 
+    private static Node node;
+
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
     }
@@ -108,7 +110,7 @@ public class kvStorage {
 
             /* prepare node information */
             printMessage("preparing node information...");
-            Node node = new Node("kvStorage-00", hostAddress, hostPort, false);
+            node = new Node("kvStorage-00", hostAddress, hostPort, false);
             node.setUtilization((double) storage.size() / (double) capacity);
             System.out.println("done");
 
@@ -117,6 +119,8 @@ public class kvStorage {
             zkRegister zk = new zkRegister("127.0.0.1:2181", node);
             zk.run();
             System.out.println("done");
+            printMessage("zookeeper path...");
+            System.out.println(zk.getMyPath());
 
 
             printMessageln("server registered");
@@ -169,7 +173,18 @@ public class kvStorage {
     }
 
     public static void putValue(String key, String value) {
-        storage.put(key, value);
+        if (value == null) {
+            storage.remove(key);
+        }
+        else {
+            storage.put(key, value);
+        }
+        node.setUtilization((double) storage.size() / (double) capacity);
+        try {
+            zkRegister.updateNodeData(node);
+        } catch (Exception e) {
+            printMessageln("failed to update metadata");
+        }
     }
 
     public static void shutdown() {

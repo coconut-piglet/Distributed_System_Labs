@@ -14,6 +14,12 @@ public class zkRegister implements Runnable {
 
     private static Node initNode;
 
+    private static String myPath;
+
+    public String getMyPath() {
+        return myPath;
+    }
+
     public zkRegister(String host, Node node) throws Exception {
         initNode = node;
 
@@ -44,7 +50,7 @@ public class zkRegister implements Runnable {
                 byte[] data = info.getBytes();
                 zooKeeper.create(znode, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
-            zooKeeper.create(znode + "/" + initNode.getAlias(),
+            myPath = zooKeeper.create(znode + "/" + initNode.getAlias(),
                     initNode.toString().getBytes(),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE,
                     CreateMode.EPHEMERAL_SEQUENTIAL
@@ -52,6 +58,10 @@ public class zkRegister implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void updateNodeData(Node node) throws Exception {
+        zooKeeper.setData(myPath, node.toString().getBytes(), zooKeeper.exists(myPath, true).getVersion());
     }
 
     public static void disconnect() throws Exception {
