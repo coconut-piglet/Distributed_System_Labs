@@ -33,6 +33,8 @@ public class kvStorage {
 
     private static boolean powerOn;
 
+    private static int capacity;
+
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
     }
@@ -56,6 +58,7 @@ public class kvStorage {
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
 
         powerOn = true;
+        capacity = 100;
 
         printMessageln("initializing service");
 
@@ -105,7 +108,8 @@ public class kvStorage {
 
             /* prepare node information */
             printMessage("preparing node information...");
-            Node node = new Node("kvStorage-00", hostAddress, hostPort, "kvBackup-00", 100);
+            Node node = new Node("kvStorage-00", hostAddress, hostPort, false);
+            node.setUtilization((double) storage.size() / (double) capacity);
             System.out.println("done");
 
             /* connect to zookeeper */

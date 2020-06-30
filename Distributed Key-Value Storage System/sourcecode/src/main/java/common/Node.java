@@ -8,11 +8,9 @@ public class Node {
 
     private final int port;
 
-    private final String replica;
+    private final boolean isReplica;
 
-    private final int capacity;
-
-    private static int usage = 0;
+    private double utilization;
 
     public String getAlias() {
         return alias;
@@ -26,27 +24,22 @@ public class Node {
         return port;
     }
 
-    public String getReplica() {
-        return replica;
+    public boolean isReplica() {
+        return isReplica;
     }
 
-    public int getCapacity() {
-        return capacity;
+    public double getUtilization() {
+        return this.utilization;
     }
 
-    public static int getUsage() {
-        return usage;
+    public void setUtilization(double utilization) {
+        this.utilization = utilization;
     }
 
-    public static void setUsage(int usage) {
-        Node.usage = usage;
-    }
-
-    public Node(String alias, String address, int port, String replica, int capacity) {
+    public Node(String alias, String address, int port, boolean isReplica) {
         this.alias = alias;
         this.address = address;
         this.port = port;
-        this.replica = replica;
-        this.capacity = capacity;
+        this.isReplica = isReplica;
     }
 }
