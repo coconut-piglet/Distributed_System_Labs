@@ -1,6 +1,8 @@
 package common;
 
-public class Node {
+import java.io.Serializable;
+
+public class Node implements Serializable {
 
     private final String alias;
 

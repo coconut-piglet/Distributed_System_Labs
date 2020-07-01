@@ -2,6 +2,8 @@ package server.master;
 
 import server.master.implementation.*;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -22,6 +24,10 @@ public class kvMaster {
 
     private static boolean powerOn;
 
+    private static String hostAddress;
+
+    private static int hostPort;
+
     private static HashMap<String, ReentrantReadWriteLock> mutex;
 
     private static ReentrantReadWriteLock systemLock;
@@ -32,6 +38,10 @@ public class kvMaster {
 
     private static void printMessageln(String msg) {
         System.out.println("kvServer: " + msg);
+    }
+
+    private static String constructName(String service) {
+        return "//" + hostAddress + ":" + hostPort + "/" + service;
     }
 
     public static void main(String[] argv) {
@@ -51,36 +61,42 @@ public class kvMaster {
         mutex = new HashMap<String, ReentrantReadWriteLock>();
         System.out.println("done");
 
-        printMessage("launch RMI registry...");
         try {
             lockSystem();
+            /* print ip address information */
+            InetAddress inetAddress = Inet4Address.getLocalHost();
+            hostAddress = inetAddress.getHostAddress();
+            System.setProperty("java.rmi.server.hostname", hostAddress);
+            printMessageln("current ip address..." + hostAddress);
+
             /* start RMI registry on the default port */
             printMessage("launch RMI registry...");
-            Registry registry = LocateRegistry.createRegistry(1099);
+            hostPort = 1099;
+            Registry registry = LocateRegistry.createRegistry(hostPort);
             System.out.println("done");
 
             /* bind PUT service */
             printMessage("binding PUT service...");
             kvPutImpl kvPut = new kvPutImpl();
-            Naming.rebind("kvPut", kvPut);
+            Naming.rebind(constructName("kvPut"), kvPut);
             System.out.println("done");
 
             /* bind READ service */
             printMessage("binding READ service...");
             kvReadImpl kvRead = new kvReadImpl();
-            Naming.rebind("kvRead", kvRead);
+            Naming.rebind(constructName("kvRead"), kvRead);
             System.out.println("done");
 
             /* bind DELETE service */
             printMessage("binding DELETE service...");
             kvDeleteImpl kvDelete = new kvDeleteImpl();
-            Naming.rebind("kvDelete", kvDelete);
+            Naming.rebind(constructName("kvDelete"), kvDelete);
             System.out.println("done");
 
             /* bind HALT service */
             printMessage("binding POWER service...");
             sysHaltImpl sysHalt = new sysHaltImpl();
-            Naming.rebind("sysHalt", sysHalt);
+            Naming.rebind(constructName("sysHalt"), sysHalt);
             System.out.println("done");
 
             printMessageln("service initialized");
@@ -96,25 +112,25 @@ public class kvMaster {
 
             /* unbind PUT service */
             printMessage("unbinding PUT service...");
-            Naming.unbind("kvPut");
+            Naming.unbind(constructName("kvPut"));
             UnicastRemoteObject.unexportObject(kvPut, true);
             System.out.println("done");
 
             /* unbind UPDATE service */
             printMessage("unbinding READ service...");
-            Naming.unbind("kvRead");
+            Naming.unbind(constructName("kvRead"));
             UnicastRemoteObject.unexportObject(kvRead, true);
             System.out.println("done");
 
             /* unbind UPDATE service */
             printMessage("unbinding DELETE service...");
-            Naming.unbind("kvDelete");
+            Naming.unbind(constructName("kvDelete"));
             UnicastRemoteObject.unexportObject(kvDelete, true);
             System.out.println("done");
 
             /* unbind HALT service */
             printMessage("unbinding POWER service...");
-            Naming.unbind("sysHalt");
+            Naming.unbind(constructName("sysHalt"));
             UnicastRemoteObject.unexportObject(sysHalt, true);
             System.out.println("done");
 

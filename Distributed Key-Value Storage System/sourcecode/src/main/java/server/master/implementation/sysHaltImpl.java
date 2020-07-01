@@ -28,7 +28,7 @@ public class sysHaltImpl extends UnicastRemoteObject implements sysHalt {
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
-            sysShutdown powerService = (sysShutdown) Naming.lookup("//192.168.31.167:10000/sysShutdown");
+            sysShutdown powerService = (sysShutdown) Naming.lookup("//192.168.31.168:10000/sysShutdown");
             powerService.shutdown();
         } catch (Exception e) {
             kvMaster.unlockSystem();

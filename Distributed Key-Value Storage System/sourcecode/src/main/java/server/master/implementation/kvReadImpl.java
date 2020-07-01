@@ -29,7 +29,7 @@ public class kvReadImpl extends UnicastRemoteObject implements kvRead {
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
-            sysGet getService = (sysGet) Naming.lookup("//192.168.31.167:10000/sysGet");
+            sysGet getService = (sysGet) Naming.lookup("//192.168.31.168:10000/sysGet");
             String value = getService.get(key).getValue();
             kvMaster.unlockRead(key);
             if (value == null)

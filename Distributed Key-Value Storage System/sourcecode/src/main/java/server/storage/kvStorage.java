@@ -33,10 +33,6 @@ public class kvStorage {
 
     private static boolean powerOn;
 
-    private static int capacity;
-
-    private static Node node;
-
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
     }
@@ -47,6 +43,11 @@ public class kvStorage {
 
     private static String constructName(String service) {
         return "//" + hostAddress + ":" + hostPort + "/" + service;
+    }
+
+    private static double roundNumber(double number, double precision) {
+        double base = Math.pow(10, precision);
+        return (double) Math.round(number * base) / base;
     }
 
     public static void main(String[] argv) {
@@ -60,7 +61,7 @@ public class kvStorage {
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
 
         powerOn = true;
-        capacity = 100;
+        int capacity = 100;
 
         printMessageln("initializing service");
 
@@ -110,8 +111,8 @@ public class kvStorage {
 
             /* prepare node information */
             printMessage("preparing node information...");
-            node = new Node("kvStorage-00", hostAddress, hostPort, false);
-            node.setUtilization((double) storage.size() / (double) capacity);
+            Node node = new Node("kvStorage-00", hostAddress, hostPort, false);
+            node.setUtilization(0);
             System.out.println("done");
 
             /* connect to zookeeper */
@@ -122,11 +123,22 @@ public class kvStorage {
             printMessage("zookeeper path...");
             System.out.println(zk.getMyPath());
 
-
             printMessageln("server registered");
 
+            double prev = 0;
             while (powerOn) {
-                /* TODO: add data management routine */
+                double crnt = (double) storage.size() / (double) capacity;
+                crnt = roundNumber(crnt, 1);
+                if (crnt != prev) {
+                    printMessageln("update utilization info");
+                    node.setUtilization(crnt);
+                    try {
+                        zk.updateNodeData(node);
+                    } catch (Exception e) {
+                        printMessageln("failed to update metadata");
+                    }
+                    prev = crnt;
+                }
                 Thread.sleep(1000);
             }
 
@@ -134,7 +146,7 @@ public class kvStorage {
 
             /* disconnect from zookeeper */
             printMessage("disconnecting from zookeeper...");
-            zkRegister.disconnect();
+            zk.disconnect();
             System.out.println("done");
 
             /* unbind sysGet service */
@@ -173,18 +185,10 @@ public class kvStorage {
     }
 
     public static void putValue(String key, String value) {
-        if (value == null) {
+        if (value == null)
             storage.remove(key);
-        }
-        else {
+        else
             storage.put(key, value);
-        }
-        node.setUtilization((double) storage.size() / (double) capacity);
-        try {
-            zkRegister.updateNodeData(node);
-        } catch (Exception e) {
-            printMessageln("failed to update metadata");
-        }
     }
 
     public static void shutdown() {

@@ -54,7 +54,7 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
-            sysGet getService = (sysGet) Naming.lookup("//192.168.31.167:10000/sysGet");
+            sysGet getService = (sysGet) Naming.lookup("//192.168.31.168:10000/sysGet");
             String value = getService.get(key).getValue();
             kvMaster.unlockRead(key);
             if (value == null)
@@ -77,7 +77,7 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
-            sysPut putService = (sysPut) Naming.lookup("//192.168.31.167:10000/sysPut");
+            sysPut putService = (sysPut) Naming.lookup("//192.168.31.168:10000/sysPut");
             putService.put(keyValuePair);
             kvMaster.unlockWrite(key);
             return new Message("SUCCESS","OK");

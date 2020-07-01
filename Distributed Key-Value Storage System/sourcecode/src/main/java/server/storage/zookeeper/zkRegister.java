@@ -1,6 +1,7 @@
 package server.storage.zookeeper;
 
 import common.Node;
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
@@ -8,13 +9,13 @@ import java.util.concurrent.CountDownLatch;
 
 public class zkRegister implements Runnable {
 
-    private static ZooKeeper zooKeeper;
+    private final ZooKeeper zooKeeper;
 
-    private static String znode = "/kvStorage";
+    private final String znode = "/kvStorage";
 
-    private static Node initNode;
+    private final Node initNode;
 
-    private static String myPath;
+    private String myPath;
 
     public String getMyPath() {
         return myPath;
@@ -46,12 +47,13 @@ public class zkRegister implements Runnable {
         try {
             Stat stat = zooKeeper.exists(znode,false);
             if (stat == null) {
-                String info = "znode for kvStorage management";
+                String info = "znode for kvStorage management [MODIFIED]";
                 byte[] data = info.getBytes();
                 zooKeeper.create(znode, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
+            byte[] initData = SerializationUtils.serialize(initNode);
             myPath = zooKeeper.create(znode + "/" + initNode.getAlias(),
-                    initNode.toString().getBytes(),
+                    initData,
                     ZooDefs.Ids.OPEN_ACL_UNSAFE,
                     CreateMode.EPHEMERAL_SEQUENTIAL
                     );
@@ -60,11 +62,15 @@ public class zkRegister implements Runnable {
         }
     }
 
-    public static void updateNodeData(Node node) throws Exception {
-        zooKeeper.setData(myPath, node.toString().getBytes(), zooKeeper.exists(myPath, true).getVersion());
+    public void updateNodeData(Node node) throws Exception {
+        String info = "znode for kvStorage management [MODIFIED]";
+        byte[] newData = SerializationUtils.serialize(node);
+        byte[] newInfo = info.getBytes();
+        zooKeeper.setData(myPath, newData, zooKeeper.exists(myPath, true).getVersion());
+        zooKeeper.setData(znode, newInfo, zooKeeper.exists(znode, true).getVersion());
     }
 
-    public static void disconnect() throws Exception {
+    public void disconnect() throws Exception {
         zooKeeper.close();
     }
 }

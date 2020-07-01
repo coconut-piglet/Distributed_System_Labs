@@ -30,7 +30,7 @@ public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
         try {
             /* for now information about kvStorage is hard coded */
             /* TODO: get kvStorage server lists from kvMaster */
-            sysPut putService = (sysPut) Naming.lookup("//192.168.31.167:10000/sysPut");
+            sysPut putService = (sysPut) Naming.lookup("//192.168.31.168:10000/sysPut");
             putService.put(new KeyValuePair(key, null));
             kvMaster.unlockWrite(key);
             return new Message("SUCCESS","OK");
