@@ -25,27 +25,45 @@ import java.util.HashMap;
  */
 public class kvStorage implements Runnable {
 
+    /* ↓↓↓↓↓↓↓↓↓↓ instance information ↓↓↓↓↓↓↓↓↓↓ */
+
+    private final String alias;
+
+    private final int hostPort;
+
+    private final boolean isReplica;
+
+    private final double precision;
+
+    public kvStorage(String alias, int hostPort, boolean isReplica, double precision) {
+        this.alias = alias;
+        this.hostPort = hostPort;
+        this.isReplica = isReplica;
+        this.precision = precision;
+    }
+
+    /* ↑↑↑↑↑↑↑↑↑↑ instance information ↑↑↑↑↑↑↑↑↑↑ */
+
+
     private static HashMap<String, String> storage;
 
     private static String hostAddress;
 
-    private static int hostPort;
-
     private static boolean powerOn;
 
-    private static void printMessage(String msg) {
+    private void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
     }
 
-    private static void printMessageln(String msg) {
+    private void printMessageln(String msg) {
         System.out.println("kvServer: " + msg);
     }
 
-    private static String constructName(String service) {
+    private String constructName(String service) {
         return "//" + hostAddress + ":" + hostPort + "/" + service;
     }
 
-    private static double roundNumber(double number, double precision) {
+    private double roundNumber(double number) {
         double base = Math.pow(10, precision);
         return (double) Math.round(number * base) / base;
     }
@@ -74,13 +92,6 @@ public class kvStorage implements Runnable {
             InetAddress inetAddress = Inet4Address.getLocalHost();
             hostAddress = inetAddress.getHostAddress();
             printMessageln("current ip address..." + hostAddress);
-
-            /* start RMI registry on random port */
-            int maxPortNum = 20000, minPortNum = 10000;
-            hostPort = (int) (Math.random() * (maxPortNum - minPortNum) + minPortNum);
-
-            /* for development purpose, port is set manually to 10000 */
-            hostPort = 10000;
 
             printMessage("launch RMI registry on port " + hostPort + "...");
             Registry registry = LocateRegistry.createRegistry(hostPort);
@@ -111,7 +122,7 @@ public class kvStorage implements Runnable {
 
             /* prepare node information */
             printMessage("preparing node information...");
-            Node node = new Node("kvStorage-00", hostAddress, hostPort, false);
+            Node node = new Node(alias, hostAddress, hostPort, isReplica);
             node.setUtilization(0);
             System.out.println("done");
 
@@ -128,7 +139,7 @@ public class kvStorage implements Runnable {
             double prev = 0;
             while (powerOn) {
                 double crnt = (double) storage.size() / (double) capacity;
-                crnt = roundNumber(crnt, 1);
+                crnt = roundNumber(crnt);
                 if (crnt != prev) {
                     printMessageln("update utilization info");
                     node.setUtilization(crnt);
