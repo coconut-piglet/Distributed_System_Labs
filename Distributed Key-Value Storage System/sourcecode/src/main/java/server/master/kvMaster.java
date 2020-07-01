@@ -189,31 +189,11 @@ public class kvMaster {
         printMessageln("goodbye");
     }
 
-    private static void createLockIfNotExists(String key) {
-        /* acquire read lock first to check whether lock exists */
-        systemLock.readLock().lock();
-
-        /* if not exists */
-        if (!mutex.containsKey(key)) {
-            /* write lock should not be acquired when holding read lock */
-            systemLock.readLock().unlock();
-
-            /* critical session: these cold should execute atomically */
-            systemLock.writeLock().lock();
-            /* chances are that lock is created during unlock readLock and acquire writeLock */
-            /* thus have to check for the second time */
-            if (!mutex.containsKey(key)) {
-                ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-                mutex.put(key, lock);
-            }
-            systemLock.writeLock().unlock();
-
-        }
-        /* if exits */
-        else {
-            systemLock.readLock().unlock();
-        }
+    public static void shutdown() {
+        powerOn = false;
     }
+
+    /* <---------- reserved area for nodes ----------> */
 
     public static void addAvailableNodes(List<Node> nodesToAdd) {
         lockWriteNode();
@@ -280,6 +260,8 @@ public class kvMaster {
         unlockWriteNode();
     }
 
+    /* <---------- reserved area for hosts ----------> */
+
     public static List<String> getAllStorageHost() {
         lockReadNode();
         List<String> hosts = new ArrayList<>();
@@ -330,6 +312,8 @@ public class kvMaster {
         return host;
     }
 
+    /* <---------- reserved area for cache ----------> */
+
     public static void removeHostCache(String key) {
         lockCacheWrite();
         hostCache.remove(key);
@@ -361,11 +345,33 @@ public class kvMaster {
         unlockCacheWrite();
     }
 
-    public static void shutdown() {
-        powerOn = false;
-    }
-
     /* <---------- reserved area for locks ----------> */
+
+    private static void createLockIfNotExists(String key) {
+        /* acquire read lock first to check whether lock exists */
+        systemLock.readLock().lock();
+
+        /* if not exists */
+        if (!mutex.containsKey(key)) {
+            /* write lock should not be acquired when holding read lock */
+            systemLock.readLock().unlock();
+
+            /* critical session: these cold should execute atomically */
+            systemLock.writeLock().lock();
+            /* chances are that lock is created during unlock readLock and acquire writeLock */
+            /* thus have to check for the second time */
+            if (!mutex.containsKey(key)) {
+                ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+                mutex.put(key, lock);
+            }
+            systemLock.writeLock().unlock();
+
+        }
+        /* if exits */
+        else {
+            systemLock.readLock().unlock();
+        }
+    }
 
     public static void lockRead(String key) {
         createLockIfNotExists(key);

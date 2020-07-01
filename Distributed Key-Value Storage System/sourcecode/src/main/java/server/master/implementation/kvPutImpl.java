@@ -59,6 +59,7 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
             return new Message("SUCCESS","OK");
         } catch (Exception e) {
             kvMaster.unlockWrite(key);
+            kvMaster.removeHostCache(key);
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
     }
@@ -84,6 +85,7 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
             }
         } catch (Exception e) {
             kvMaster.unlockRead(key);
+            kvMaster.removeHostCache(key);
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
 
@@ -107,6 +109,7 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
             return new Message("SUCCESS","OK");
         } catch (Exception e) {
             kvMaster.unlockWrite(key);
+            kvMaster.removeHostCache(key);
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
 

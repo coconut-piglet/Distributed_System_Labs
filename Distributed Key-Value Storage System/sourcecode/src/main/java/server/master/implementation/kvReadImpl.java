@@ -43,6 +43,7 @@ public class kvReadImpl extends UnicastRemoteObject implements kvRead {
             }
         } catch (Exception e) {
             kvMaster.unlockRead(key);
+            kvMaster.removeHostCache(key);
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
     }

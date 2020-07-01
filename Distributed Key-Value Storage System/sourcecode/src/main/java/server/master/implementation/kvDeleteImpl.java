@@ -30,6 +30,7 @@ public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
         try {
             String host = kvMaster.whereIsKey(key);
             if (host == null) {
+                /* do not forget to unlock before return */
                 kvMaster.unlockWrite(key);
                 return new Message("SUCCESS","OK");
             }
@@ -40,6 +41,8 @@ public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
             return new Message("SUCCESS","OK");
         } catch (Exception e) {
             kvMaster.unlockWrite(key);
+            /* in this case, if the cache still contains current key, it should be removed */
+            kvMaster.removeHostCache(key);
             return new Message("ERROR", "internal error, failed to connect to kvStorage");
         }
 
