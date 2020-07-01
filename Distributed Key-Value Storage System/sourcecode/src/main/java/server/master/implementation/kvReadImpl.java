@@ -15,7 +15,7 @@ import java.rmi.server.UnicastRemoteObject;
  *   [√] implement basic logic
  *   [√] contact with storage server
  *   [√] implement concurrency control
- *   [ ] remove hard coded kvStorage
+ *   [√] remove hard coded kvStorage
  */
 public class kvReadImpl extends UnicastRemoteObject implements kvRead {
 
@@ -27,14 +27,18 @@ public class kvReadImpl extends UnicastRemoteObject implements kvRead {
 
         kvMaster.lockRead(key);
         try {
-            /* for now information about kvStorage is hard coded */
-            /* TODO: get kvStorage server lists from kvMaster */
-            sysGet getService = (sysGet) Naming.lookup("//192.168.31.168:10000/sysGet");
+            String host = kvMaster.whereIsKey(key);
+            if (host == null) {
+                kvMaster.unlockRead(key);
+                return new Message("NOTFOUND", "no value has been recorded for this key");
+            }
+            sysGet getService = (sysGet) Naming.lookup(host + "sysGet");
             String value = getService.get(key).getValue();
             kvMaster.unlockRead(key);
             if (value == null)
                 return new Message("NOTFOUND", "no value has been recorded for this key");
             else {
+                kvMaster.updateHostCache(key, host);
                 return new Message("SUCCESS", value);
             }
         } catch (Exception e) {

@@ -24,4 +24,10 @@ public class sysGetImpl extends UnicastRemoteObject implements sysGet {
 
     }
 
+    @Override
+    public boolean ping(String key) throws RemoteException {
+
+        return kvStorage.hasKey(key);
+
+    }
 }

@@ -3,6 +3,7 @@ package server.master;
 import common.Node;
 import server.master.implementation.*;
 import server.master.zookeeper.nodeExecutor;
+import server.storage.api.sysGet;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -10,6 +11,7 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,6 +36,12 @@ public class kvMaster {
 
     private static HashMap<String, ReentrantReadWriteLock> mutex;
 
+    private static HashMap<String, String> hostCache;
+
+    private static List<String> cachedKeys;
+
+    private static int hostCacheSize;
+
     private static List<Node> availableNodes;
 
     private static List<Node> backupNodes;
@@ -41,6 +49,8 @@ public class kvMaster {
     private static ReentrantReadWriteLock systemLock;
 
     private static ReentrantReadWriteLock nodeLock;
+
+    private static ReentrantReadWriteLock cacheLock;
 
     private static void printMessage(String msg) {
         System.out.print("kvServer: " + msg);
@@ -69,7 +79,14 @@ public class kvMaster {
         printMessageln("initializing mutex...");
         systemLock = new ReentrantReadWriteLock();
         nodeLock = new ReentrantReadWriteLock();
+        cacheLock = new ReentrantReadWriteLock();
         mutex = new HashMap<String, ReentrantReadWriteLock>();
+        System.out.println("done");
+
+        printMessageln("initializing cache...");
+        hostCache = new HashMap<String, String>();
+        cachedKeys = new LinkedList<String>();
+        hostCacheSize = 5;
         System.out.println("done");
 
         printMessageln("initializing available nodes list...");
@@ -200,6 +217,7 @@ public class kvMaster {
 
     public static void addAvailableNodes(List<Node> nodesToAdd) {
         lockWriteNode();
+        printMessage("updating node information...");
         nodesToAdd.forEach(node -> {
             if (node.isReplica()) {
                 backupNodes.add(node);
@@ -214,11 +232,15 @@ public class kvMaster {
                 availableNodes.add(position, node);
             }
         });
+        System.out.println("done");
+        printMessageln("current available nodes: " + availableNodes.size());
+        printMessageln("current backup nodes: " + backupNodes.size());
         unlockWriteNode();
     }
 
     public static void removeExistingNodes(List<String> nodesToRemove) {
         lockWriteNode();
+        printMessage("updating node information...");
         nodesToRemove.forEach(path -> {
             boolean modified = false;
             for (int i = 0; i < availableNodes.size(); i++) {
@@ -252,8 +274,23 @@ public class kvMaster {
                 printMessageln("found a ghost node lol");
             }
         });
-
+        System.out.println("done");
+        printMessageln("current available nodes: " + availableNodes.size());
+        printMessageln("current backup nodes: " + backupNodes.size());
         unlockWriteNode();
+    }
+
+    public static List<String> getAllStorageHost() {
+        lockReadNode();
+        List<String> hosts = new ArrayList<>();
+        for (Node node : availableNodes) {
+            hosts.add("//" + node.getAddress() + ":" + node.getPort() + "/");
+        }
+        for (Node node : backupNodes) {
+            hosts.add("//" + node.getAddress() + ":" + node.getPort() + "/");
+        }
+        unlockReadNode();
+        return hosts;
     }
 
     public static String getStorageHost() {
@@ -266,6 +303,69 @@ public class kvMaster {
         unlockReadNode();
         return host;
     }
+
+    public static String whereIsKey(String key) {
+        String host = null;
+        lockCacheRead();
+        if (cachedKeys.contains(key)) {
+            host = hostCache.get(key);
+            unlockCacheRead();
+            return host;
+        }
+        unlockCacheRead();
+        lockReadNode();
+        for (Node node : availableNodes) {
+            String target = "//" + node.getAddress() + ":" + node.getPort() + "/";
+            try {
+                sysGet getService = (sysGet) Naming.lookup(target + "sysGet");
+                if (getService.ping(key)) {
+                    host = target;
+                    break;
+                }
+            } catch (Exception e) {
+                printMessageln("node unavailable during global search");
+            }
+        }
+        unlockReadNode();
+        return host;
+    }
+
+    public static void removeHostCache(String key) {
+        lockCacheWrite();
+        hostCache.remove(key);
+        cachedKeys.remove(key);
+        unlockCacheWrite();
+    }
+
+    public static void updateHostCache(String key, String host) {
+        lockCacheWrite();
+        /* update existing cache or cache still free */
+        if (cachedKeys.contains(key)) {
+            hostCache.put(key, host);
+            cachedKeys.remove(key);
+            cachedKeys.add(cachedKeys.size(), key);
+        }
+        else if (hostCache.size() < hostCacheSize) {
+            hostCache.put(key, host);
+            cachedKeys.add(cachedKeys.size(), key);
+        }
+        else {
+            /* insert new key */
+            cachedKeys.add(hostCacheSize, key);
+            hostCache.put(key, host);
+            /* and evict the least recently used key */
+            String evictedKey = cachedKeys.get(0);
+            cachedKeys.remove(0);
+            hostCache.remove(evictedKey);
+        }
+        unlockCacheWrite();
+    }
+
+    public static void shutdown() {
+        powerOn = false;
+    }
+
+    /* <---------- reserved area for locks ----------> */
 
     public static void lockRead(String key) {
         createLockIfNotExists(key);
@@ -285,6 +385,10 @@ public class kvMaster {
 
     private static void lockWriteNode() {nodeLock.writeLock().lock();}
 
+    private static void lockCacheRead() {cacheLock.readLock().lock();}
+
+    private static void lockCacheWrite() {cacheLock.writeLock().lock();}
+
     public static void unlockRead(String key) {
         mutex.get(key).readLock().unlock();
     }
@@ -297,11 +401,11 @@ public class kvMaster {
         systemLock.writeLock().unlock();
     }
 
-    public static void shutdown() {
-        powerOn = false;
-    }
-
     private static void unlockReadNode() {nodeLock.readLock().unlock();}
 
     private static void unlockWriteNode() {nodeLock.writeLock().unlock();}
+
+    private static void unlockCacheRead() {cacheLock.readLock().unlock();}
+
+    private static void unlockCacheWrite() {cacheLock.writeLock().unlock();}
 }

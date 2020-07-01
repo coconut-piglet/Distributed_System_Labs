@@ -16,7 +16,7 @@ import java.rmi.server.UnicastRemoteObject;
  *   [√] implement basic logic
  *   [√] contact with storage server
  *   [√] implement concurrency control
- *   [ ] remove hard coded kvStorage
+ *   [√] remove hard coded kvStorage
  */
 public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
 
@@ -28,11 +28,15 @@ public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
 
         kvMaster.lockWrite(key);
         try {
-            /* for now information about kvStorage is hard coded */
-            /* TODO: get kvStorage server lists from kvMaster */
-            sysPut putService = (sysPut) Naming.lookup("//192.168.31.168:10000/sysPut");
+            String host = kvMaster.whereIsKey(key);
+            if (host == null) {
+                kvMaster.unlockWrite(key);
+                return new Message("SUCCESS","OK");
+            }
+            sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
             putService.put(new KeyValuePair(key, null));
             kvMaster.unlockWrite(key);
+            kvMaster.removeHostCache(key);
             return new Message("SUCCESS","OK");
         } catch (Exception e) {
             kvMaster.unlockWrite(key);

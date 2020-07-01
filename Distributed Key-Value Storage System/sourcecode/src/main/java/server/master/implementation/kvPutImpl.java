@@ -44,7 +44,23 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
 
     @Override
     public Message update(KeyValuePair keyValuePair) throws RemoteException {
-        return putData(keyValuePair);
+        String key = keyValuePair.getKey();
+        kvMaster.lockWrite(key);
+        try {
+            String host = kvMaster.whereIsKey(key);
+            if (host == null) {
+                kvMaster.unlockWrite(key);
+                return new Message("ERROR", "key has been removed");
+            }
+            sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
+            putService.put(keyValuePair);
+            kvMaster.unlockWrite(key);
+            kvMaster.updateHostCache(key, host);
+            return new Message("SUCCESS","OK");
+        } catch (Exception e) {
+            kvMaster.unlockWrite(key);
+            return new Message("ERROR", "internal error, failed to connect to kvStorage");
+        }
     }
 
     /* check whether the key provided is already in the database */
@@ -52,14 +68,18 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
 
         kvMaster.lockRead(key);
         try {
-            /* for now information about kvStorage is hard coded */
-            /* TODO: get kvStorage server lists from kvMaster */
-            sysGet getService = (sysGet) Naming.lookup("//192.168.31.168:10000/sysGet");
+            String host = kvMaster.whereIsKey(key);
+            if (host == null) {
+                kvMaster.unlockRead(key);
+                return new Message("PASS", "this key has no value recorded");
+            }
+            sysGet getService = (sysGet) Naming.lookup(host + "sysGet");
             String value = getService.get(key).getValue();
             kvMaster.unlockRead(key);
             if (value == null)
-                return new Message("PASS", "this key has not value recorded");
+                return new Message("PASS", "this key has no value recorded");
             else {
+                kvMaster.updateHostCache(key, host);
                 return new Message("EXISTED", value);
             }
         } catch (Exception e) {
@@ -76,11 +96,14 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
         kvMaster.lockWrite(key);
         try {
             String host = kvMaster.getStorageHost();
-            if (host == null)
+            if (host == null) {
+                kvMaster.unlockWrite(key);
                 return new Message("ERROR", "kvStorage not available");
+            }
             sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
             putService.put(keyValuePair);
             kvMaster.unlockWrite(key);
+            kvMaster.updateHostCache(key, host);
             return new Message("SUCCESS","OK");
         } catch (Exception e) {
             kvMaster.unlockWrite(key);

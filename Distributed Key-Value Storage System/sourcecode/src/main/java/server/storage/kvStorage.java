@@ -180,6 +180,10 @@ public class kvStorage {
         printMessageln("goodbye");
     }
 
+    public static boolean hasKey(String key) {
+        return storage.containsKey(key);
+    }
+
     public static String getValue(String key) {
         return storage.getOrDefault(key, null);
     }
