@@ -1,6 +1,7 @@
 package server.master;
 
 import server.master.implementation.*;
+import server.master.zookeeper.nodeExecutor;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -98,6 +99,10 @@ public class kvMaster {
             sysHaltImpl sysHalt = new sysHaltImpl();
             Naming.rebind(constructName("sysHalt"), sysHalt);
             System.out.println("done");
+
+            /* start zookeeper node listener */
+            nodeExecutor nodeExec = new nodeExecutor("127.0.0.1:2181", "/kvStorage");
+            nodeExec.run();
 
             printMessageln("service initialized");
             unlockSystem();
