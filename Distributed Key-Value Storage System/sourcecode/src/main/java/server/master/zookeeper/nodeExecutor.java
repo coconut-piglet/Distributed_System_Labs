@@ -5,6 +5,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import server.master.kvMaster;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,17 +87,22 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
                 printMessageln("empty");
             printMessageln("<--------incoming change-------->");
             List<Node> nodesToAddList = new ArrayList<>();
+            if (nodesToRemove.size() > 0) {
+                kvMaster.removeExistingNodes(nodesToRemove);
+            }
             if (nodesToAdd.size() > 0) {
                 nodesToAdd.forEach(nodePath -> {
                     try {
                         byte[] nodeData = zooKeeper.getData(constructPath(nodePath), false, null);
                         Node newNode = SerializationUtils.deserialize(nodeData);
+                        newNode.setZkPath(nodePath);
                         nodesToAddList.add(newNode);
                     } catch (Exception e) {
                         printMessageln("failed to fetch node data");
                     }
                 });
                 printMessageln("number of newly fetched nodes: " + nodesToAddList.size());
+                kvMaster.addAvailableNodes(nodesToAddList);
             }
         }
     }

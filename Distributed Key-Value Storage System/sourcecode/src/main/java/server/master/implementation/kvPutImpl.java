@@ -17,7 +17,7 @@ import java.rmi.server.UnicastRemoteObject;
  *   [√] implement basic logic
  *   [√] contact with storage server
  *   [√] implement concurrency control
- *   [ ] remove hard coded kvStorage
+ *   [√] remove hard coded kvStorage
  */
 public class kvPutImpl extends UnicastRemoteObject implements kvPut {
 
@@ -75,9 +75,10 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
         String key = keyValuePair.getKey();
         kvMaster.lockWrite(key);
         try {
-            /* for now information about kvStorage is hard coded */
-            /* TODO: get kvStorage server lists from kvMaster */
-            sysPut putService = (sysPut) Naming.lookup("//192.168.31.168:10000/sysPut");
+            String host = kvMaster.getStorageHost();
+            if (host == null)
+                return new Message("ERROR", "kvStorage not available");
+            sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
             putService.put(keyValuePair);
             kvMaster.unlockWrite(key);
             return new Message("SUCCESS","OK");

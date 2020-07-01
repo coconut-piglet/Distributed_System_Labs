@@ -14,6 +14,8 @@ public class Node implements Serializable {
 
     private double utilization;
 
+    private String zkPath;
+
     public String getAlias() {
         return alias;
     }
@@ -31,11 +33,19 @@ public class Node implements Serializable {
     }
 
     public double getUtilization() {
-        return this.utilization;
+        return utilization;
     }
 
     public void setUtilization(double utilization) {
         this.utilization = utilization;
+    }
+
+    public String getZkPath() {
+        return zkPath;
+    }
+
+    public void setZkPath(String zkPath) {
+        this.zkPath = zkPath;
     }
 
     public Node(String alias, String address, int port, boolean isReplica) {
