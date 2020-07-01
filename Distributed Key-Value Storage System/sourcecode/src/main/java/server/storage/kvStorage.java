@@ -23,7 +23,7 @@ import java.util.HashMap;
  *   [ ] upgrade to journaling storage
  *   [ ] upgrade to persistent storage
  */
-public class kvStorage {
+public class kvStorage implements Runnable {
 
     private static HashMap<String, String> storage;
 
@@ -50,7 +50,7 @@ public class kvStorage {
         return (double) Math.round(number * base) / base;
     }
 
-    public static void main(String[] argv) {
+    public void run() {
         System.out.println(".d8888. d88888b d8888b.   j88D  d88888D      db   dD db    db .d8888. d888888b d8888b.  .d88b.   .d8b.   d888b  d88888b ");
         System.out.println("88'  YP 88'     VP  `8D  j8~88  VP  d8'      88 ,8P' 88    88 88'  YP `~~88~~' 88  `8D .8P  Y8. d8' `8b 88' Y8b 88'     ");
         System.out.println("`8bo.   88ooooo   oooY' j8' 88     d8'       88,8P   Y8    8P `8bo.      88    88oobY' 88    88 88ooo88 88      88ooooo ");
