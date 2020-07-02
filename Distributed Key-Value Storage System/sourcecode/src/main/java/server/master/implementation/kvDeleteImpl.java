@@ -9,6 +9,7 @@ import server.storage.api.sysPut;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
 
 /*
  * DELETE service
@@ -36,6 +37,18 @@ public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
             }
             sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
             putService.put(new KeyValuePair(key, null));
+
+            /* write the same data to all the replicas */
+            List<String> replicas = kvMaster.getReplicas(host);
+            for (String replica : replicas) {
+                try {
+                    sysPut putServiceReplica = (sysPut) Naming.lookup(replica + "sysPut");
+                    putServiceReplica.put(new KeyValuePair(key, null));
+                } catch (Exception e) {
+                    /* do nothing here */
+                }
+            }
+
             kvMaster.unlockWrite(key);
             kvMaster.removeHostCache(key);
             return new Message("SUCCESS","OK");

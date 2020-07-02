@@ -276,9 +276,28 @@ public class kvMaster {
         return hosts;
     }
 
-    public static List<String> getReplicas() {
+    public static List<String> getReplicas(String host) {
         List<String> replicas = new ArrayList<String>();
-        /* TODO: add logic here */
+        lockReadNode();
+        Node masterNode = null;
+        for (Node node : availableNodes) {
+            String path = "//" + node.getAddress() + ":" + node.getPort() + "/";
+            if (path.equals(host)) {
+                masterNode = node;
+                break;
+            }
+        }
+        if (masterNode == null) {
+            unlockReadNode();
+            return replicas;
+        }
+        String masterAlias = masterNode.getAlias();
+        for (Node node : backupNodes) {
+            if (node.getMaster().equals(masterAlias)) {
+                replicas.add("//" + node.getAddress() + ":" + node.getPort() + "/");
+            }
+        }
+        unlockReadNode();
         return replicas;
     }
 

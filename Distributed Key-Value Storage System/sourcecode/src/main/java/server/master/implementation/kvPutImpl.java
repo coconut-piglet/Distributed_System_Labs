@@ -10,6 +10,7 @@ import server.storage.api.sysPut;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
 
 /*
  * PUT service
@@ -38,30 +39,13 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
         }
         /* otherwise continue creating new key/value pair */
         else {
-            return putData(keyValuePair);
+            return putData(keyValuePair, false);
         }
     }
 
     @Override
     public Message update(KeyValuePair keyValuePair) throws RemoteException {
-        String key = keyValuePair.getKey();
-        kvMaster.lockWrite(key);
-        try {
-            String host = kvMaster.whereIsKey(key);
-            if (host == null) {
-                kvMaster.unlockWrite(key);
-                return new Message("ERROR", "key has been removed");
-            }
-            sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
-            putService.put(keyValuePair);
-            kvMaster.unlockWrite(key);
-            kvMaster.updateHostCache(key, host);
-            return new Message("SUCCESS","OK");
-        } catch (Exception e) {
-            kvMaster.unlockWrite(key);
-            kvMaster.removeHostCache(key);
-            return new Message("ERROR", "internal error, failed to connect to kvStorage");
-        }
+        return putData(keyValuePair, true);
     }
 
     /* check whether the key provided is already in the database */
@@ -92,18 +76,41 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
     }
 
     /* insert new key/value pair to the database */
-    private Message putData (KeyValuePair keyValuePair) {
+    private Message putData (KeyValuePair keyValuePair, boolean replace) {
 
         String key = keyValuePair.getKey();
         kvMaster.lockWrite(key);
         try {
-            String host = kvMaster.getStorageHost();
-            if (host == null) {
-                kvMaster.unlockWrite(key);
-                return new Message("ERROR", "kvStorage not available");
+            String host;
+            if (replace) {
+                host = kvMaster.whereIsKey(key);
+                if (host == null) {
+                    kvMaster.unlockWrite(key);
+                    return new Message("ERROR", "key has been removed");
+                }
             }
+            else {
+                host = kvMaster.getStorageHost();
+                if (host == null) {
+                    kvMaster.unlockWrite(key);
+                    return new Message("ERROR", "kvStorage not available");
+                }
+            }
+
             sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
             putService.put(keyValuePair);
+
+            /* write the same data to all the replicas */
+            List<String> replicas = kvMaster.getReplicas(host);
+            for (String replica : replicas) {
+                try {
+                    sysPut putServiceReplica = (sysPut) Naming.lookup(replica + "sysPut");
+                    putServiceReplica.put(keyValuePair);
+                } catch (Exception e) {
+                    /* do nothing here */
+                }
+            }
+
             kvMaster.unlockWrite(key);
             kvMaster.updateHostCache(key, host);
             return new Message("SUCCESS","OK");
