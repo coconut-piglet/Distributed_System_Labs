@@ -66,7 +66,7 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
         }
 
         private void printMessageln(String msg) {
-            System.out.println("zooKeeper: " + msg);
+            System.out.println("nodeExecutor: " + msg);
         }
 
         private String constructPath(String path) {

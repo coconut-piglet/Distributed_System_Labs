@@ -36,7 +36,11 @@ public class kvStorage implements Runnable {
     private final double precision;
 
     public kvStorage(String alias, int hostPort, boolean isReplica, double precision) {
-        this.alias = alias;
+        /* remove all '.' from input alias, so that xxx.backup can be detected more easily */
+        String tmp = alias.replaceAll("\\.", "");
+        if (isReplica)
+            tmp += ".backup";
+        this.alias = tmp;
         this.hostPort = hostPort;
         this.isReplica = isReplica;
         this.precision = precision;

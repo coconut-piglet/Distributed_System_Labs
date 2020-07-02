@@ -32,7 +32,7 @@ public class nodeMonitor implements Watcher, AsyncCallback.ChildrenCallback {
         this.znode = znode;
         this.chainedWatcher = chainedWatcher;
         this.listener = listener;
-        this.prevNodeList = new ArrayList<>();
+        this.prevNodeList = new ArrayList<String>();
         /* get things start by checking if the node exists */
         zooKeeper.getChildren(znode, true, this, null);
     }
@@ -92,14 +92,40 @@ public class nodeMonitor implements Watcher, AsyncCallback.ChildrenCallback {
             }
         }
 
+        printMessageln("<---------previous status-------->");
+        if (prevNodeList == null || prevNodeList.size() == 0)
+            printMessageln("empty");
+        else
+            prevNodeList.forEach(this::printMessageln);
+        printMessageln("<---------previous status--------->");
+
+        printMessageln("<---------current status--------->");
+        if (currNodeList == null || currNodeList.size() == 0)
+            printMessageln("empty");
+        else
+            currNodeList.forEach(this::printMessageln);
+        printMessageln("<---------current status--------->");
+
         if ((currNodeList == null && currNodeList != prevNodeList)
                 || (currNodeList != null && !currNodeList.equals(prevNodeList))) {
-            List<String> nodesToAdd = currNodeList;
-            List<String> nodesToRemove = prevNodeList;
-            nodesToAdd.removeAll(prevNodeList);
-            nodesToRemove.removeAll(currNodeList);
-            listener.handleChanged(nodesToAdd, nodesToRemove);
+            List<String> nodesToAdd = new ArrayList<String>();
+            List<String> nodesToRemove = new ArrayList<String>();
+            if (currNodeList == null)
+                currNodeList = new ArrayList<String>();
+            for (String node : currNodeList) {
+                if (!prevNodeList.contains(node))
+                    nodesToAdd.add(node);
+            }
+            for (String node: prevNodeList) {
+                if (!currNodeList.contains(node))
+                    nodesToRemove.add(node);
+            }
             prevNodeList = currNodeList;
+            listener.handleChanged(nodesToAdd, nodesToRemove);
         }
+    }
+
+    private void printMessageln(String msg) {
+        System.out.println("nodeMonitor: " + msg);
     }
 }

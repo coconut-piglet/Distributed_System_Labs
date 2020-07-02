@@ -231,7 +231,8 @@ public class kvMaster {
                     String alias = tmpNode.getAlias();
                     for (int j = 0; j < backupNodes.size(); j++) {
                         Node bakNode = backupNodes.get(i);
-                        if (bakNode.getAlias().equals(alias)) {
+                        String[] fullAlias = bakNode.getAlias().split("\\.");
+                        if (fullAlias[0].equals(alias)) {
                             availableNodes.add(i, bakNode);
                             backupNodes.remove(bakNode);
                             break;

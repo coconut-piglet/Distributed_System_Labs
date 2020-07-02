@@ -74,6 +74,7 @@ public class kvClient {
         boolean debug = false;
         if (argv.length != 2 && argv.length != 3) {
             printMessage("invalid arguments, please at lest specify server address and port");
+            return;
         }
         else if (argv.length == 3 && argv[2].equals("-debug")) {
             printMessage("**** DEBUG MODE ON ****");
