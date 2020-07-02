@@ -103,6 +103,14 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
                 });
                 printMessageln("number of newly fetched nodes: " + nodesToAddList.size());
                 kvMaster.addAvailableNodes(nodesToAddList);
+                nodesToAdd.forEach(nodePath -> {
+                    try {
+                        dataExecutor executor = new dataExecutor("127.0.0.1:2181", constructPath(nodePath));
+                        executor.run();
+                    } catch (Exception e) {
+                        printMessageln("failed to set executor for node");
+                    }
+                });
             }
         }
     }

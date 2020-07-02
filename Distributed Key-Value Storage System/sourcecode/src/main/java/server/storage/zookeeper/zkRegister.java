@@ -11,8 +11,6 @@ public class zkRegister implements Runnable {
 
     private final ZooKeeper zooKeeper;
 
-    private final String znode = "/kvStorage";
-
     private final Node initNode;
 
     private String myPath;
@@ -45,9 +43,10 @@ public class zkRegister implements Runnable {
     @Override
     public void run() {
         try {
+            String znode = "/kvStorage";
             Stat stat = zooKeeper.exists(znode,false);
             if (stat == null) {
-                String info = "znode for kvStorage management [MODIFIED]";
+                String info = "znode for kvStorage management";
                 byte[] data = info.getBytes();
                 zooKeeper.create(znode, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
@@ -63,11 +62,8 @@ public class zkRegister implements Runnable {
     }
 
     public void updateNodeData(Node node) throws Exception {
-        String info = "znode for kvStorage management [MODIFIED]";
         byte[] newData = SerializationUtils.serialize(node);
-        byte[] newInfo = info.getBytes();
         zooKeeper.setData(myPath, newData, zooKeeper.exists(myPath, true).getVersion());
-        zooKeeper.setData(znode, newInfo, zooKeeper.exists(znode, true).getVersion());
     }
 
     public void disconnect() throws Exception {

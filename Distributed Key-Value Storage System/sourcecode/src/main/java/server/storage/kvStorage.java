@@ -144,14 +144,15 @@ public class kvStorage implements Runnable {
                 double crnt = (double) storage.size() / (double) capacity;
                 crnt = roundNumber(crnt);
                 if (crnt != prev) {
-                    printMessageln("update utilization info");
+                    printMessage("updating utilization info...");
                     node.setUtilization(crnt);
                     try {
                         zk.updateNodeData(node);
                     } catch (Exception e) {
-                        printMessageln("failed to update metadata");
+                        System.out.println("failed");
                     }
                     prev = crnt;
+                    System.out.println("done");
                 }
                 Thread.sleep(1000);
             }

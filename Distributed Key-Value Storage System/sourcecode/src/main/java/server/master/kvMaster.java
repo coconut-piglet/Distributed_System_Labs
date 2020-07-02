@@ -195,6 +195,30 @@ public class kvMaster {
 
     /* <---------- reserved area for nodes ----------> */
 
+    public static void updateNode(Node node) {
+        lockWriteNode();
+        printMessage("updating node information...");
+        String target = node.getAlias();
+        for (Node availableNode : availableNodes) {
+            if (availableNode.getAlias().equals(target)) {
+                availableNode.setUtilization(node.getUtilization());
+                System.out.println("done");
+                unlockWriteNode();
+                return;
+            }
+        }
+        for (Node backupNode : backupNodes) {
+            if (backupNode.getAlias().equals(target)) {
+                backupNode.setUtilization(node.getUtilization());
+                System.out.println("done");
+                unlockWriteNode();
+                return;
+            }
+        }
+        System.out.println("failed");
+        unlockWriteNode();
+    }
+
     public static void addAvailableNodes(List<Node> nodesToAdd) {
         lockWriteNode();
         printMessage("updating node information...");
@@ -203,13 +227,7 @@ public class kvMaster {
                 backupNodes.add(node);
             }
             else {
-                int position;
-                for (position = 0; position < availableNodes.size(); position++) {
-                    if (availableNodes.get(position).getUtilization() > node.getUtilization()) {
-                        break;
-                    }
-                }
-                availableNodes.add(position, node);
+                availableNodes.add(node);
             }
         });
         System.out.println("done");
