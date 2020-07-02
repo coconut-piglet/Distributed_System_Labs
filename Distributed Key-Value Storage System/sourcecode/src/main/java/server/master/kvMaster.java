@@ -274,9 +274,9 @@ public class kvMaster {
             boolean modified = false;
             for (int i = 0; i < availableNodes.size(); i++) {
                 Node tmpNode = availableNodes.get(i);
-                String tmpPath = tmpNode.getZkPath();
 
-                if (tmpPath.equals(path)) {
+                if (tmpNode.getZkPath().equals(path)) {
+                    cleanHostCache(tmpNode.getAddress() + ":" + tmpNode.getPort());
                     String alias = tmpNode.getAlias();
                     for (int j = 0; j < backupNodes.size(); j++) {
                         Node bakNode = backupNodes.get(i);
@@ -375,6 +375,21 @@ public class kvMaster {
     }
 
     /* <---------- reserved area for cache ----------> */
+
+    public static void cleanHostCache(String host) {
+        lockCacheWrite();
+        List<String> keysToRemove = new ArrayList<>();
+        for (String key : hostCache.keySet()) {
+            if (hostCache.get(key).contains(host)) {
+                keysToRemove.add(key);
+            }
+        }
+        keysToRemove.forEach(key -> {
+            hostCache.remove(key);
+            cachedKeys.remove(key);
+        });
+        unlockCacheWrite();
+    }
 
     public static void removeHostCache(String key) {
         lockCacheWrite();
