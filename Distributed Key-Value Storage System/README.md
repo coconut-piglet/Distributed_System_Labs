@@ -1,3 +1,3 @@
 # Distributed Key-Value Storage System
 
-WIP
+Done, README.md will soon be updated.
