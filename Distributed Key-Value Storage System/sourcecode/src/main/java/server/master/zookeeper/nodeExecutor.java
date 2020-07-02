@@ -18,8 +18,11 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
 
     String znode;
 
+    String host;
+
     public nodeExecutor(String host, String znode) throws Exception {
         this.znode = znode;
+        this.host = host;
         this.zooKeeper = new ZooKeeper(host, 5000, this);
         this.monitor = new nodeMonitor(zooKeeper, znode, null, this);
     }
@@ -43,7 +46,7 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
 
     @Override
     public void handleChanged(List<String> nodesToAdd, List<String> nodesToRemove) {
-        new updateNodeList(nodesToAdd, nodesToRemove, zooKeeper, znode);
+        new updateNodeList(nodesToAdd, nodesToRemove, zooKeeper, znode, host);
     }
 
     @Override
@@ -56,12 +59,14 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
         List<String> nodesToRemove;
         ZooKeeper zooKeeper;
         String znode;
+        String zkHost;
 
-        public updateNodeList(List<String> nodesToAdd, List<String> nodesToRemove, ZooKeeper zooKeeper, String znode) {
+        public updateNodeList(List<String> nodesToAdd, List<String> nodesToRemove, ZooKeeper zooKeeper, String znode, String zkHost) {
             this.nodesToAdd = nodesToAdd;
             this.nodesToRemove = nodesToRemove;
             this.zooKeeper = zooKeeper;
             this.znode = znode;
+            this.zkHost = zkHost;
             start();
         }
 
@@ -105,7 +110,7 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
                 kvMaster.addAvailableNodes(nodesToAddList);
                 nodesToAdd.forEach(nodePath -> {
                     try {
-                        dataExecutor executor = new dataExecutor("127.0.0.1:2181", constructPath(nodePath));
+                        dataExecutor executor = new dataExecutor(zkHost, constructPath(nodePath));
                         executor.run();
                     } catch (Exception e) {
                         printMessageln("failed to set executor for node");

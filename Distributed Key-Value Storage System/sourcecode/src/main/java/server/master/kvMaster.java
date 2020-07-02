@@ -74,6 +74,13 @@ public class kvMaster {
         System.out.println("_______________________________________________________________________________________________________________");
         System.out.println("Welcome To Distributed Key-Value Storage System By YUEQI ZHAO");
 
+        if (argv.length != 2) {
+            printMessageln("invalid arguments, please specify zookeeper server address and port");
+            return;
+        }
+
+        String zkHost = argv[0] + ":" + argv[1];
+
         powerOn = true;
 
         printMessageln("initializing mutex...");
@@ -136,7 +143,7 @@ public class kvMaster {
             System.out.println("done");
 
             /* start zookeeper node listener */
-            nodeExecutor nodeExec = new nodeExecutor("127.0.0.1:2181", "/kvStorage");
+            nodeExecutor nodeExec = new nodeExecutor(zkHost, "/kvStorage");
             nodeExec.run();
 
             printMessageln("service initialized");
@@ -279,7 +286,7 @@ public class kvMaster {
                     cleanHostCache(tmpNode.getAddress() + ":" + tmpNode.getPort());
                     String alias = tmpNode.getAlias();
                     for (int j = 0; j < backupNodes.size(); j++) {
-                        Node bakNode = backupNodes.get(i);
+                        Node bakNode = backupNodes.get(j);
                         String bakFor = bakNode.getMaster();
                         if (bakFor.equals(alias)) {
                             availableNodes.add(i, bakNode);

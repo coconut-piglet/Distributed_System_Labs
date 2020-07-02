@@ -37,12 +37,15 @@ public class kvStorage implements Runnable {
 
     private final double precision;
 
-    public kvStorage(String alias, int hostPort, boolean isReplica, String master, double precision) {
+    private final String zkHost;
+
+    public kvStorage(String alias, int hostPort, boolean isReplica, String master, double precision, String zkHost) {
         this.alias = alias;
         this.hostPort = hostPort;
         this.isReplica = isReplica;
         this.master = master;
         this.precision = precision;
+        this.zkHost = zkHost;
     }
 
     /* ↑↑↑↑↑↑↑↑↑↑ instance information ↑↑↑↑↑↑↑↑↑↑ */
@@ -131,7 +134,7 @@ public class kvStorage implements Runnable {
 
             /* connect to zookeeper */
             printMessage("connecting to zookeeper...");
-            zkRegister zk = new zkRegister("127.0.0.1:2181", node);
+            zkRegister zk = new zkRegister(zkHost, node);
             zk.run();
             System.out.println("done");
             printMessage("zookeeper path...");
