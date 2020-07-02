@@ -23,15 +23,6 @@ public class dataExecutor implements Watcher, Runnable, dataMonitor.dataMonitorL
     }
 
     public void run() {
-        /*
-        try {
-            synchronized (this) {
-                while (!monitor.isDead) {
-                    wait();
-                }
-            }
-        } catch (InterruptedException e) {
-        }*/
     }
 
     @Override

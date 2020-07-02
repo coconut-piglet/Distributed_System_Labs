@@ -28,15 +28,6 @@ public class nodeExecutor implements Watcher, Runnable, nodeMonitor.nodeMonitorL
     }
 
     public void run() {
-        /*
-        try {
-            synchronized (this) {
-                while (!monitor.isDead) {
-                    wait();
-                }
-            }
-        } catch (InterruptedException e) {
-        }*/
     }
 
     @Override

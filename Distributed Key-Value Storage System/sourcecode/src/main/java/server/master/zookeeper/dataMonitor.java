@@ -1,6 +1,5 @@
 package server.master.zookeeper;
 
-import common.Node;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
