@@ -143,8 +143,39 @@ public class kvMaster {
             unlockSystem();
 
             while (powerOn) {
-                /* TODO: add node management routine */
-                Thread.sleep(1000);
+
+                try {
+                    lockReadNode();
+                    if (availableNodes.size() == 0) {
+                        unlockReadNode();
+                        Thread.sleep(5000);
+                        continue;
+                    }
+                    int next = 0;
+                    double utilMin = availableNodes.get(0).getUtilization();
+                    for (int i = 1; i < availableNodes.size(); i++) {
+                        double currUtil = availableNodes.get(i).getUtilization();
+                        if (currUtil < utilMin) {
+                            next = i;
+                            utilMin = currUtil;
+                        }
+                    }
+                    unlockReadNode();
+                    if (next > 0) {
+                        lockWriteNode();
+                        printMessage("scheduling...");
+                        Node nextNode = availableNodes.get(next);
+                        availableNodes.remove(next);
+                        availableNodes.add(0, nextNode);
+                        System.out.println("done");
+                        printMessageln("node '" + nextNode.getAlias() + "' is the default target now");
+                        unlockWriteNode();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                Thread.sleep(5000);
             }
 
             lockSystem();
