@@ -267,31 +267,18 @@ public class kvMaster {
         lockReadNode();
         List<String> hosts = new ArrayList<>();
         for (Node node : availableNodes) {
-            hosts.add("//" + node.getAddress() + ":" + node.getPort() + "/");
+            hosts.add(node.getAlias() + "=//" + node.getAddress() + ":" + node.getPort() + "/");
         }
         for (Node node : backupNodes) {
-            hosts.add("//" + node.getAddress() + ":" + node.getPort() + "/");
+            hosts.add(node.getAlias() + "=//" + node.getAddress() + ":" + node.getPort() + "/");
         }
         unlockReadNode();
         return hosts;
     }
 
-    public static List<String> getReplicas(String host) {
+    public static List<String> getReplicas(String masterAlias) {
         List<String> replicas = new ArrayList<String>();
         lockReadNode();
-        Node masterNode = null;
-        for (Node node : availableNodes) {
-            String path = "//" + node.getAddress() + ":" + node.getPort() + "/";
-            if (path.equals(host)) {
-                masterNode = node;
-                break;
-            }
-        }
-        if (masterNode == null) {
-            unlockReadNode();
-            return replicas;
-        }
-        String masterAlias = masterNode.getAlias();
         for (Node node : backupNodes) {
             if (node.getMaster().equals(masterAlias)) {
                 replicas.add("//" + node.getAddress() + ":" + node.getPort() + "/");
@@ -306,7 +293,7 @@ public class kvMaster {
         lockReadNode();
         if (availableNodes.size() > 0) {
             Node target = availableNodes.get(0);
-            host = "//" + target.getAddress() + ":" + target.getPort() + "/";
+            host = target.getAlias() + "=//" + target.getAddress() + ":" + target.getPort() + "/";
         }
         unlockReadNode();
         return host;
@@ -327,7 +314,7 @@ public class kvMaster {
             try {
                 sysGet getService = (sysGet) Naming.lookup(target + "sysGet");
                 if (getService.ping(key)) {
-                    host = target;
+                    host = node.getAlias() + "=" + target;
                     break;
                 }
             } catch (Exception e) {

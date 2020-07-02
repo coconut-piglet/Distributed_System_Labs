@@ -35,11 +35,12 @@ public class kvDeleteImpl extends UnicastRemoteObject implements kvDelete {
                 kvMaster.unlockWrite(key);
                 return new Message("SUCCESS","OK");
             }
-            sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
+            String[] hostInfo = host.split("=");
+            sysPut putService = (sysPut) Naming.lookup(hostInfo[1] + "sysPut");
             putService.put(new KeyValuePair(key, null));
 
             /* write the same data to all the replicas */
-            List<String> replicas = kvMaster.getReplicas(host);
+            List<String> replicas = kvMaster.getReplicas(hostInfo[0]);
             for (String replica : replicas) {
                 try {
                     sysPut putServiceReplica = (sysPut) Naming.lookup(replica + "sysPut");

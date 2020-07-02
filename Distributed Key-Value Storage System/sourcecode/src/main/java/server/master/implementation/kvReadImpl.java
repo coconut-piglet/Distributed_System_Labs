@@ -32,7 +32,8 @@ public class kvReadImpl extends UnicastRemoteObject implements kvRead {
                 kvMaster.unlockRead(key);
                 return new Message("NOTFOUND", "no value has been recorded for this key");
             }
-            sysGet getService = (sysGet) Naming.lookup(host + "sysGet");
+            String[] hostInfo = host.split("=");
+            sysGet getService = (sysGet) Naming.lookup(hostInfo[1] + "sysGet");
             String value = getService.get(key).getValue();
             kvMaster.unlockRead(key);
             if (value == null)

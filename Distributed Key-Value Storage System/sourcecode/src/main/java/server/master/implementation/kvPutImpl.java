@@ -58,7 +58,8 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
                 kvMaster.unlockRead(key);
                 return new Message("PASS", "this key has no value recorded");
             }
-            sysGet getService = (sysGet) Naming.lookup(host + "sysGet");
+            String[] hostInfo = host.split("=");
+            sysGet getService = (sysGet) Naming.lookup(hostInfo[1] + "sysGet");
             String value = getService.get(key).getValue();
             kvMaster.unlockRead(key);
             if (value == null)
@@ -97,11 +98,12 @@ public class kvPutImpl extends UnicastRemoteObject implements kvPut {
                 }
             }
 
-            sysPut putService = (sysPut) Naming.lookup(host + "sysPut");
+            String[] hostInfo = host.split("=");
+            sysPut putService = (sysPut) Naming.lookup(hostInfo[1] + "sysPut");
             putService.put(keyValuePair);
 
             /* write the same data to all the replicas */
-            List<String> replicas = kvMaster.getReplicas(host);
+            List<String> replicas = kvMaster.getReplicas(hostInfo[0]);
             for (String replica : replicas) {
                 try {
                     sysPut putServiceReplica = (sysPut) Naming.lookup(replica + "sysPut");

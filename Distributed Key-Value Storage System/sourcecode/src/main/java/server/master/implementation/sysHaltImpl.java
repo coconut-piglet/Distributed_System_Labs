@@ -31,6 +31,7 @@ public class sysHaltImpl extends UnicastRemoteObject implements sysHalt {
         if (hosts.size() != 0) {
             for (String host : hosts) {
                 try {
+                    host = host.split("=")[1];
                     sysShutdown powerService = (sysShutdown) Naming.lookup(host + "sysShutdown");
                     powerService.shutdown();
                 } catch (Exception e) {
