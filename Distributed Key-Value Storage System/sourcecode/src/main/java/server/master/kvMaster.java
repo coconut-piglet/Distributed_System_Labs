@@ -231,8 +231,8 @@ public class kvMaster {
                     String alias = tmpNode.getAlias();
                     for (int j = 0; j < backupNodes.size(); j++) {
                         Node bakNode = backupNodes.get(i);
-                        String[] fullAlias = bakNode.getAlias().split("\\.");
-                        if (fullAlias[0].equals(alias)) {
+                        String bakFor = bakNode.getMaster();
+                        if (bakFor.equals(alias)) {
                             availableNodes.add(i, bakNode);
                             backupNodes.remove(bakNode);
                             break;
@@ -274,6 +274,12 @@ public class kvMaster {
         }
         unlockReadNode();
         return hosts;
+    }
+
+    public static List<String> getReplicas() {
+        List<String> replicas = new ArrayList<String>();
+        /* TODO: add logic here */
+        return replicas;
     }
 
     public static String getStorageHost() {

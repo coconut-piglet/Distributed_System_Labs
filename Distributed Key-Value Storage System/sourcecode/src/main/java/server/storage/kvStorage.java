@@ -33,16 +33,15 @@ public class kvStorage implements Runnable {
 
     private final boolean isReplica;
 
+    private final String master;
+
     private final double precision;
 
-    public kvStorage(String alias, int hostPort, boolean isReplica, double precision) {
-        /* remove all '.' from input alias, so that xxx.backup can be detected more easily */
-        String tmp = alias.replaceAll("\\.", "");
-        if (isReplica)
-            tmp += ".backup";
-        this.alias = tmp;
+    public kvStorage(String alias, int hostPort, boolean isReplica, String master, double precision) {
+        this.alias = alias;
         this.hostPort = hostPort;
         this.isReplica = isReplica;
+        this.master = master;
         this.precision = precision;
     }
 
@@ -126,7 +125,7 @@ public class kvStorage implements Runnable {
 
             /* prepare node information */
             printMessage("preparing node information...");
-            Node node = new Node(alias, hostAddress, hostPort, isReplica);
+            Node node = new Node(alias, hostAddress, hostPort, isReplica, master);
             node.setUtilization(0);
             System.out.println("done");
 
